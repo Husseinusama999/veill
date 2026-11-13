@@ -31,7 +31,7 @@ jobs:
 
       - name: Generate project files
         run: |
-          mkdir -p app/src/main/java/com/hussein/veil app/src/main/res/xml app/src/main/res/values
+          mkdir -p app/src/main/java/com/hussein/veil app/src/main/res/xml app/src/main/res/values app/src/main/res/values-ar
 
           cat > settings.gradle.kts <<'EOF'
           pluginManagement {
@@ -78,8 +78,8 @@ jobs:
                   applicationId = "com.hussein.veil"
                   minSdk = 24
                   targetSdk = 34
-                  versionCode = 2
-                  versionName = "2.0"
+                  versionCode = 3
+                  versionName = "3.0"
               }
 
               compileOptions {
@@ -96,6 +96,8 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
               <queries>
                   <intent>
                       <action android:name="android.intent.action.MAIN" />
@@ -108,7 +110,7 @@ jobs:
                   android:icon="@android:drawable/ic_menu_view"
                   android:label="@string/app_name"
                   android:supportsRtl="true"
-                  android:theme="@android:style/Theme.DeviceDefault.Light">
+                  android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
 
                   <activity
                       android:name=".MainActivity"
@@ -120,7 +122,15 @@ jobs:
                   </activity>
 
                   <activity
+                      android:name=".PageActivity"
+                      android:exported="false" />
+
+                  <activity
                       android:name=".AppsActivity"
+                      android:exported="false" />
+
+                  <receiver
+                      android:name=".ToggleReceiver"
                       android:exported="false" />
 
                   <service
@@ -164,319 +174,315 @@ jobs:
           cat > app/src/main/res/values/strings.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <string name="app_name">Veil - ستارة الخصوصية</string>
-              <string name="tile_label">ستارة الشاشة</string>
-              <string name="service_desc">يعتّم الشاشة (فوق الكيبورد أو الشاشة كاملة) لحمايتك من نظرات من بجانبك. لا يقرأ ولا يخزن ولا يرسل أي شيء تكتبه، ولا يحتاج إنترنت.</string>
-              <string name="note">طريقة العمل:\n- مع الكيبورد: لما الكيبورد يظهر تتعتم الشاشة فوقه، والزر الصغير 👁 يرفع الستارة أو يرجّعها.\n- بدون كيبورد: فعّل ستارة الشاشة كاملة من هنا أو من لوحة الإعدادات السريعة (اسحب من فوق، اضغط على القلم، وأضف بلاطة ستارة الشاشة).\n- تطبيقات معينة: اختر تطبيقات البنوك مثلًا وتتعتم تلقائيًا لما تفتحها.\n\nالتطبيق لا يقرأ ما تكتبه ولا يرسل أي بيانات. بعد التفعيل يرجع تلقائيًا بعد إعادة تشغيل الهاتف.\n\nلو خيار التفعيل رمادي (أندرويد 13 وما بعده): افتح معلومات التطبيق من إعدادات الهاتف، اضغط النقاط الثلاث، اختر السماح بالإعدادات المقيّدة، ثم فعّل الخدمة.</string>
+              <string name="app_name">Veil</string>
+              <string name="app_title">Veil</string>
+              <string name="tile_label">Whole screen veil</string>
+              <string name="service_desc">Veils the screen above the keyboard or the whole screen to protect you from prying eyes. It never reads what you type and needs no internet.</string>
+              <string name="privacy_layer">Privacy layer</string>
+              <string name="intro">Keep typing in any app. Drop a veil over the screen so the person beside you sees nothing, while your own words stay faintly readable.</string>
+              <string name="intro2">The control starts on the keyboard and can be dragged anywhere, and the veil keeps your own text faintly readable.</string>
+              <string name="setup">Setup</string>
+              <string name="s1_t">Draw over apps</string>
+              <string name="s1_d">Draws the veil and its control above other apps.</string>
+              <string name="s2_t">Keyboard awareness</string>
+              <string name="s2_d">Notices when a keyboard opens. Never reads keystrokes.</string>
+              <string name="ready">READY</string>
+              <string name="allow">ALLOW</string>
+              <string name="arm_t">Arm the veil</string>
+              <string name="arm_d">Runs quietly until you need it</string>
+              <string name="tuning">Tuning</string>
+              <string name="opacity_t">Veil opacity</string>
+              <string name="opacity_d">Lower means you can read your own text through it.</string>
+              <string name="photo_t">Veil photo</string>
+              <string name="choose">Choose</string>
+              <string name="photo_d">Fills the veil with a photo from your gallery.</string>
+              <string name="remove_photo">Remove photo</string>
+              <string name="photo_ok">Photo set</string>
+              <string name="photo_fail">Could not open the image</string>
+              <string name="decoy_t">Decoy</string>
+              <string name="decoy_d">Instead of a dark veil, a dull everyday page. Anyone glancing over sees someone reading the news, not someone hiding something.</string>
+              <string name="style_t">Veil style</string>
+              <string name="style_d">Four tones of dark.</string>
+              <string name="offset_t">Keyboard offset</string>
+              <string name="none">None</string>
+              <string name="offset_d">Some keyboards keep a toolbar or suggestion strip along their top edge, and that strip is part of the keyboard window. Extend the veil down to cover as much of it as you need.</string>
+              <string name="under_t">Use the app under the veil</string>
+              <string name="under_d">Taps, scrolling and zoom reach the app below while it is covered. Peeking moves to a long press on the control.</string>
+              <string name="cover_t">Cover notification pop-ups</string>
+              <string name="cover_d">While the veil is down, messages that slide in at the top are covered too. You can still tap or swipe them.</string>
+              <string name="pos_t">Control position</string>
+              <string name="moved">Moved</string>
+              <string name="pos_d">Where it starts out above the keyboard; drag the control itself to park it anywhere on screen.</string>
+              <string name="look_t">Control look</string>
+              <string name="open">Open</string>
+              <string name="anim_t">Animation speed</string>
+              <string name="whole_t">Whole screen veil</string>
+              <string name="whole_d">Veil the whole screen with no keyboard: from the notification, a floating control, the tile or apps you choose.</string>
+              <string name="whole_now_t">Veil the whole screen now</string>
+              <string name="whole_now_d">Covers everything until you turn it off.</string>
+              <string name="fop_t">Whole screen opacity</string>
+              <string name="notif_t">Notification control</string>
+              <string name="notif_d">A notification you tap to veil or unveil the whole screen.</string>
+              <string name="fab_t">Always show the control</string>
+              <string name="fab_d">A small control stays on screen even with no keyboard. Tap it to veil, long press to peek, drag it anywhere.</string>
+              <string name="auto_t">Automatic</string>
+              <string name="auto_d">Auto veil in any number of apps, plus quiet hours.</string>
+              <string name="auto_kb_t">Veil when the keyboard opens</string>
+              <string name="auto_kb_d">The veil drops by itself and the control lifts it.</string>
+              <string name="apps_t">Apps</string>
+              <string name="quiet_t">Quiet hours</string>
+              <string name="quiet_d">No automatic app veil between these hours.</string>
+              <string name="quiet_from">From %1$d:00</string>
+              <string name="quiet_to">To %1$d:00</string>
+              <string name="tile_t">Quick Settings tile</string>
+              <string name="tile_d">Arm and disarm the veil from your Quick Settings panel</string>
+              <string name="add">Add</string>
+              <string name="tile_hint">Swipe down, tap the pencil, and drag the tile into your panel.</string>
+              <string name="try_t">Try it here</string>
+              <string name="try_off">Not armed yet</string>
+              <string name="try_on">Tap here to type</string>
+              <string name="try_d">Arm the veil above, then tap this box.</string>
+              <string name="wild_t">In the wild</string>
+              <string name="w1">Keyboard opens and a small control lands on it</string>
+              <string name="w2">Tap Veil and the screen drops under cover</string>
+              <string name="w3">Your own text stays faintly readable through it</string>
+              <string name="w4">Press and hold the control to peek underneath</string>
+              <string name="w5">Tap Off, or close the keyboard, to end it</string>
+              <string name="support">Support</string>
+              <string name="lang_t">Language</string>
+              <string name="lang_d">Used throughout the app.</string>
+              <string name="about_t">Privacy</string>
+              <string name="about_d">What this app can and cannot see.</string>
+              <string name="about_msg">Veil uses an accessibility service only to know whether a keyboard is on screen and, for the automatic app veil, which app is open. It never reads what you type or any text on screen, has no internet access and sends nothing anywhere.</string>
+              <string name="replay">Replay the walkthrough</string>
+              <string name="walk_t">How it works</string>
+              <string name="veil_btn">Veil</string>
+              <string name="off_btn">Off</string>
+              <string name="notif_channel">Veil control</string>
+              <string name="notif_on">Veil is on. Tap to lift it</string>
+              <string name="notif_off">Tap to veil the whole screen</string>
+              <string name="look_size">Size</string>
+              <string name="look_shape">Shape</string>
+              <string name="look_style">Style</string>
+              <string name="look_color">Color</string>
+              <string-array name="decoy_names"><item>None</item><item>News</item><item>Weather</item><item>Notes</item><item>Recipe</item></string-array>
+              <string-array name="vstyle_names"><item>Ink</item><item>Slate</item><item>Warm</item><item>Pure</item></string-array>
+              <string-array name="pos_names"><item>Start</item><item>Center</item><item>End</item></string-array>
+              <string-array name="shape_names"><item>Soft</item><item>Round</item><item>Square</item></string-array>
+              <string-array name="cstyle_names"><item>Fill</item><item>Outline</item><item>Glass</item></string-array>
+              <string-array name="ccolor_names"><item>Amber</item><item>White</item><item>Red</item><item>Green</item><item>Blue</item></string-array>
+              <string-array name="anim_names"><item>Slow</item><item>Normal</item><item>Fast</item><item>Instant</item></string-array>
+              <string-array name="lang_names"><item>Auto</item><item>English</item><item>العربية</item></string-array>
+              <string-array name="decoy_titles"><item>Daily News</item><item>Weather</item><item>Notes</item><item>Recipe</item></string-array>
+              <string-array name="decoy_1"><item>Markets open steady as investors await new data</item><item>City council approves plan for a new riverside park</item><item>Local team wins its third straight home game</item></string-array>
+              <string-array name="decoy_2"><item>Today: partly cloudy with a light breeze</item><item>Tomorrow: sunny, high of 27 degrees</item><item>Weekend: mild with a chance of showers</item></string-array>
+              <string-array name="decoy_3"><item>Buy milk, eggs and bread</item><item>Call the dentist to book a checkup</item><item>Pay the electricity bill this week</item></string-array>
+              <string-array name="decoy_4"><item>2 cups flour, 1 cup sugar, 2 eggs</item><item>Mix the dry ingredients in a large bowl</item><item>Bake for 35 minutes, then let it cool</item></string-array>
+          </resources>
+          EOF
+
+          cat > app/src/main/res/values-ar/strings.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">Veil</string>
+              <string name="app_title">Veil</string>
+              <string name="tile_label">ستارة الشاشة كاملة</string>
+              <string name="service_desc">يعتّم الشاشة فوق الكيبورد أو بالكامل لحمايتك من نظرات من بجانبك. لا يقرأ ما تكتبه ولا يحتاج إنترنت.</string>
+              <string name="privacy_layer">طبقة الخصوصية</string>
+              <string name="intro">اكتب في أي تطبيق. أسدل ستارة على الشاشة فلا يرى من بجانبك شيئًا، بينما تبقى كتابتك مقروءة بشكل خفيف.</string>
+              <string name="intro2">يظهر زر التحكم فوق الكيبورد ويمكنك سحبه لأي مكان، وتبقى كتابتك مقروءة بشكل خفيف من خلال الستارة.</string>
+              <string name="setup">الإعداد</string>
+              <string name="s1_t">العرض فوق التطبيقات</string>
+              <string name="s1_d">يرسم الستارة وزر التحكم فوق التطبيقات الأخرى.</string>
+              <string name="s2_t">اكتشاف الكيبورد</string>
+              <string name="s2_d">يلاحظ فتح الكيبورد فقط، ولا يقرأ ما تكتبه أبدًا.</string>
+              <string name="ready">جاهز</string>
+              <string name="allow">فعّل</string>
+              <string name="arm_t">تفعيل الستارة</string>
+              <string name="arm_d">يعمل بهدوء حتى تحتاجه</string>
+              <string name="tuning">الضبط</string>
+              <string name="opacity_t">درجة التعتيم</string>
+              <string name="opacity_d">كلما قلّت القيمة سهلت قراءة كتابتك من خلال الستارة.</string>
+              <string name="photo_t">صورة الستارة</string>
+              <string name="choose">اختيار</string>
+              <string name="photo_d">تملأ الستارة بصورة من معرض الصور.</string>
+              <string name="remove_photo">إزالة الصورة</string>
+              <string name="photo_ok">تم تعيين الصورة</string>
+              <string name="photo_fail">تعذّر فتح الصورة</string>
+              <string name="decoy_t">ستارة تمويهية</string>
+              <string name="decoy_d">بدل الستارة الداكنة تظهر صفحة عادية مملة، فيرى من ينظر إليك شخصًا يقرأ الأخبار لا شخصًا يخفي شيئًا.</string>
+              <string name="style_t">نمط الستارة</string>
+              <string name="style_d">أربع درجات من اللون الداكن.</string>
+              <string name="offset_t">إزاحة الكيبورد</string>
+              <string name="none">بدون</string>
+              <string name="offset_d">بعض الكيبوردات تضع شريطًا في أعلاها (الاقتراحات مثلًا) وهو جزء من نافذة الكيبورد. مدّ الستارة لأسفل لتغطيه بالقدر الذي تريده.</string>
+              <string name="under_t">استخدم التطبيق تحت الستارة</string>
+              <string name="under_d">اللمس والتمرير والتكبير تصل للتطبيق تحت الستارة. ولرؤية ما تحتها اضغط مطولًا على زر التحكم.</string>
+              <string name="cover_t">تغطية إشعارات أعلى الشاشة</string>
+              <string name="cover_d">أثناء الستارة تُغطّى الرسائل التي تنزل من أعلى الشاشة أيضًا، ويمكنك الضغط عليها أو سحبها.</string>
+              <string name="pos_t">مكان الزر</string>
+              <string name="moved">تم تحريكه</string>
+              <string name="pos_d">المكان الذي يبدأ فيه الزر فوق الكيبورد. اسحب الزر نفسه لتركنه في أي مكان على الشاشة.</string>
+              <string name="look_t">شكل الزر</string>
+              <string name="open">فتح</string>
+              <string name="anim_t">سرعة الحركة</string>
+              <string name="whole_t">ستارة الشاشة كاملة</string>
+              <string name="whole_d">عتّم الشاشة كاملة بدون كيبورد، من الإشعار أو زر عائم أو بلاطة الإعدادات السريعة أو تطبيقات تختارها.</string>
+              <string name="whole_now_t">عتّم الشاشة كاملة الآن</string>
+              <string name="whole_now_d">تغطي كل شيء حتى تطفئها.</string>
+              <string name="fop_t">درجة تعتيم الشاشة كاملة</string>
+              <string name="notif_t">التحكم من الإشعار</string>
+              <string name="notif_d">إشعار تضغط عليه لتعتيم الشاشة كاملة أو رفع التعتيم.</string>
+              <string name="fab_t">إظهار الزر دائمًا</string>
+              <string name="fab_d">يبقى زر صغير على الشاشة حتى بدون كيبورد. اضغط للتعتيم، واضغط مطولًا للنظر تحت الستارة، واسحبه لأي مكان.</string>
+              <string name="auto_t">تلقائي</string>
+              <string name="auto_d">تعتيم تلقائي لتطبيقات تختارها (بلا حد للعدد) مع ساعات هدوء.</string>
+              <string name="auto_kb_t">تعتيم عند ظهور الكيبورد</string>
+              <string name="auto_kb_d">تنزل الستارة تلقائيًا ويرفعها الزر.</string>
+              <string name="apps_t">التطبيقات</string>
+              <string name="quiet_t">ساعات الهدوء</string>
+              <string name="quiet_d">لا تعتيم تلقائي للتطبيقات بين هاتين الساعتين.</string>
+              <string name="quiet_from">من %1$d:00</string>
+              <string name="quiet_to">إلى %1$d:00</string>
+              <string name="tile_t">بلاطة الإعدادات السريعة</string>
+              <string name="tile_d">شغّل الستارة أو أوقفها من لوحة الإعدادات السريعة</string>
+              <string name="add">إضافة</string>
+              <string name="tile_hint">اسحب من أعلى الشاشة، اضغط على القلم، ثم اسحب البلاطة إلى اللوحة.</string>
+              <string name="try_t">جرّبه هنا</string>
+              <string name="try_off">لم يتم التفعيل بعد</string>
+              <string name="try_on">اضغط هنا للكتابة</string>
+              <string name="try_d">فعّل الستارة بالأعلى ثم اضغط على هذا المربع.</string>
+              <string name="wild_t">في الاستخدام</string>
+              <string name="w1">يفتح الكيبورد ويظهر زر صغير فوقه</string>
+              <string name="w2">اضغط على زر ستارة فتنزل الستارة على الشاشة</string>
+              <string name="w3">تبقى كتابتك مقروءة بشكل خفيف من خلالها</string>
+              <string name="w4">اضغط مطولًا على الزر لترى ما تحت الستارة</string>
+              <string name="w5">اضغط إيقاف أو أغلق الكيبورد لإنهائها</string>
+              <string name="support">الدعم</string>
+              <string name="lang_t">اللغة</string>
+              <string name="lang_d">تُستخدم في كل التطبيق.</string>
+              <string name="about_t">الخصوصية</string>
+              <string name="about_d">ما الذي يراه التطبيق وما لا يراه.</string>
+              <string name="about_msg">يستخدم Veil خدمة سهولة الاستخدام فقط ليعرف هل الكيبورد ظاهر، وليعرف أي تطبيق مفتوح في خيار التعتيم التلقائي للتطبيقات. لا يقرأ ما تكتبه ولا أي نص على الشاشة، ولا يملك اتصالًا بالإنترنت، ولا يرسل أي شيء لأي جهة.</string>
+              <string name="replay">إعادة الشرح</string>
+              <string name="walk_t">طريقة العمل</string>
+              <string name="veil_btn">ستارة</string>
+              <string name="off_btn">إيقاف</string>
+              <string name="notif_channel">التحكم بالستارة</string>
+              <string name="notif_on">الستارة تعمل. اضغط لرفعها</string>
+              <string name="notif_off">اضغط لتعتيم الشاشة كاملة</string>
+              <string name="look_size">الحجم</string>
+              <string name="look_shape">الشكل</string>
+              <string name="look_style">النمط</string>
+              <string name="look_color">اللون</string>
+              <string-array name="decoy_names"><item>بدون</item><item>أخبار</item><item>طقس</item><item>ملاحظات</item><item>وصفة</item></string-array>
+              <string-array name="vstyle_names"><item>حبر</item><item>رمادي</item><item>دافئ</item><item>أسود</item></string-array>
+              <string-array name="pos_names"><item>البداية</item><item>الوسط</item><item>النهاية</item></string-array>
+              <string-array name="shape_names"><item>ناعم</item><item>دائري</item><item>مربع</item></string-array>
+              <string-array name="cstyle_names"><item>ممتلئ</item><item>إطار</item><item>شفاف</item></string-array>
+              <string-array name="ccolor_names"><item>عنبري</item><item>أبيض</item><item>أحمر</item><item>أخضر</item><item>أزرق</item></string-array>
+              <string-array name="anim_names"><item>بطيئة</item><item>عادية</item><item>سريعة</item><item>فورية</item></string-array>
+              <string-array name="lang_names"><item>تلقائي</item><item>English</item><item>العربية</item></string-array>
+              <string-array name="decoy_titles"><item>أخبار اليوم</item><item>الطقس</item><item>ملاحظاتي</item><item>وصفة</item></string-array>
+              <string-array name="decoy_1"><item>الأسواق تفتح مستقرة وسط ترقب بيانات جديدة</item><item>المجلس المحلي يقر خطة لحديقة جديدة على النهر</item><item>الفريق المحلي يفوز للمرة الثالثة على التوالي</item></string-array>
+              <string-array name="decoy_2"><item>اليوم: غائم جزئيًا مع نسيم خفيف</item><item>غدًا: مشمس والعظمى 27 درجة</item><item>نهاية الأسبوع: معتدل مع فرصة أمطار خفيفة</item></string-array>
+              <string-array name="decoy_3"><item>شراء حليب وبيض وخبز</item><item>الاتصال بالطبيب لحجز موعد</item><item>دفع فاتورة الكهرباء هذا الأسبوع</item></string-array>
+              <string-array name="decoy_4"><item>كوبان من الدقيق وكوب سكر وبيضتان</item><item>اخلط المكونات الجافة في وعاء كبير</item><item>اخبزه 35 دقيقة ثم اتركه يبرد</item></string-array>
           </resources>
           EOF
 
           cat > app/src/main/java/com/hussein/veil/Cfg.kt <<'EOF'
           package com.hussein.veil
 
+          import android.content.Context
+          import android.content.SharedPreferences
+          import android.graphics.Color
+          import android.graphics.Typeface
+          import android.graphics.drawable.GradientDrawable
+          import android.view.Gravity
+          import android.widget.TextView
+
           object Cfg {
               const val PREFS = "s"
 
-              val colors = intArrayOf(
-                  0xFF000000.toInt(),
-                  0xFF202020.toInt(),
-                  0xFF0A1A3A.toInt(),
-                  0xFF0A2A14.toInt(),
-                  0xFF2A0A0A.toInt()
-              )
-              val colorNames = arrayOf("أسود", "رمادي غامق", "كحلي", "أخضر غامق", "عنابي غامق")
-              val ctlNames = arrayOf("يسار", "وسط", "يمين")
+              val AMBER = 0xFFE0A45A.toInt()
+              val CREAM = 0xFFEDE6DA.toInt()
+              val DIM = 0xFF8C8C8C.toInt()
+              val CHIP = 0xFF1B1C1E.toInt()
+              val LINE = 0xFF2A2B2D.toInt()
+              val DARK = 0xFF141414.toInt()
+
+              val veilColors = intArrayOf(0xFF070A12.toInt(), 0xFF1C2330.toInt(), 0xFF1A120C.toInt(), 0xFF000000.toInt())
+              val ctlColors = intArrayOf(AMBER, 0xFFF2F2F2.toInt(), 0xFFE5604F.toInt(), 0xFF5DBB7A.toInt(), 0xFF5B9BE0.toInt())
+              val decoyBg = intArrayOf(0, 0xFFF6F4EF.toInt(), 0xFFD9E8F7.toInt(), 0xFFFFF4B8.toInt(), 0xFFFBEFE2.toInt())
+
+              fun styleControl(ctx: Context, t: TextView, p: SharedPreferences) {
+                  val d = ctx.resources.displayMetrics.density
+                  val sizeDp = p.getInt("csize", 42)
+                  val h = sizeDp * d
+                  val col = ctlColors[p.getInt("ccolor", 0).coerceIn(0, ctlColors.size - 1)]
+                  val bg = GradientDrawable()
+                  bg.cornerRadius = when (p.getInt("cshape", 0)) {
+                      0 -> h * 0.3f
+                      1 -> h / 2f
+                      else -> 3 * d
+                  }
+                  when (p.getInt("cstyle", 0)) {
+                      0 -> {
+                          bg.setColor(col)
+                          t.setTextColor(DARK)
+                      }
+                      1 -> {
+                          bg.setColor(0xCC111111.toInt())
+                          bg.setStroke((2 * d).toInt(), col)
+                          t.setTextColor(col)
+                      }
+                      else -> {
+                          bg.setColor((col and 0x00FFFFFF) or 0x66000000)
+                          t.setTextColor(Color.WHITE)
+                      }
+                  }
+                  t.background = bg
+                  t.gravity = Gravity.CENTER
+                  t.textSize = sizeDp * 0.33f
+                  t.typeface = Typeface.DEFAULT_BOLD
+                  t.setPadding(0, 0, 0, 0)
+              }
           }
           EOF
 
-          cat > app/src/main/java/com/hussein/veil/VeilService.kt <<'EOF'
+          cat > app/src/main/java/com/hussein/veil/Lang.kt <<'EOF'
           package com.hussein.veil
 
-          import android.accessibilityservice.AccessibilityService
-          import android.content.SharedPreferences
-          import android.graphics.Bitmap
-          import android.graphics.BitmapFactory
-          import android.graphics.Color
-          import android.graphics.PixelFormat
-          import android.graphics.Rect
-          import android.graphics.drawable.GradientDrawable
-          import android.view.Gravity
-          import android.view.MotionEvent
-          import android.view.WindowManager
-          import android.view.accessibility.AccessibilityEvent
-          import android.view.accessibility.AccessibilityWindowInfo
-          import android.widget.ImageView
-          import android.widget.TextView
-          import java.io.File
+          import android.content.Context
+          import android.content.res.Configuration
+          import java.util.Locale
 
-          class VeilService : AccessibilityService() {
-
-              private val wm by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
-              private val prefs by lazy { getSharedPreferences(Cfg.PREFS, MODE_PRIVATE) }
-
-              private var veil: ImageView? = null
-              private var bubble: TextView? = null
-              private var kbToggled = false
-              private var lastBottom = -2
-              private var lastStyleKey = ""
-              private var lastThrough = true
-              private var bubbleKey = ""
-              private var bmp: Bitmap? = null
-              private var bmpVer = -1
-
-              private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refresh() }
-
-              override fun onServiceConnected() {
-                  super.onServiceConnected()
-                  prefs.registerOnSharedPreferenceChangeListener(listener)
-                  refresh()
+          object Lang {
+              fun wrap(base: Context): Context {
+                  val code = base.getSharedPreferences(Cfg.PREFS, Context.MODE_PRIVATE).getString("lang", "") ?: ""
+                  if (code.isEmpty()) return base
+                  val loc = Locale(code)
+                  Locale.setDefault(loc)
+                  val cfg = Configuration(base.resources.configuration)
+                  cfg.setLocale(loc)
+                  cfg.setLayoutDirection(loc)
+                  return base.createConfigurationContext(cfg)
               }
+          }
+          EOF
 
-              override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-                  refresh()
-              }
+          cat > app/src/main/java/com/hussein/veil/ToggleReceiver.kt <<'EOF'
+          package com.hussein.veil
 
-              override fun onInterrupt() {}
+          import android.content.BroadcastReceiver
+          import android.content.Context
+          import android.content.Intent
 
-              override fun onDestroy() {
-                  try {
-                      prefs.unregisterOnSharedPreferenceChangeListener(listener)
-                  } catch (e: Exception) {
-                  }
-                  removeAll()
-                  super.onDestroy()
-              }
-
-              private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
-
-              private fun refresh() {
-                  try {
-                      if (!prefs.getBoolean("on", true)) {
-                          removeAll()
-                          return
-                      }
-                      val dm = resources.displayMetrics
-                      var ime = -1
-                      val r = Rect()
-                      for (w in windows) {
-                          if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) {
-                              w.getBoundsInScreen(r)
-                              if (r.height() > 0 && r.top > 0) ime = r.top
-                          }
-                      }
-                      if (ime < 0) kbToggled = false
-
-                      val full = prefs.getBoolean("full", false) || appMatch()
-                      val kbActive = ime > 0 && (prefs.getBoolean("kbauto", true) != kbToggled)
-                      val off = dp(prefs.getInt("offset", 0))
-
-                      val bottom = when {
-                          full -> if (ime > 0) minOf(ime + off, dm.heightPixels) else 0
-                          kbActive -> minOf(ime + off, dm.heightPixels)
-                          else -> -1
-                      }
-
-                      applyVeil(
-                          bottom,
-                          prefs.getInt("opacity", 85),
-                          prefs.getInt("color", 0),
-                          prefs.getBoolean("photo", false),
-                          prefs.getInt("photoVer", 0),
-                          prefs.getBoolean("through", true)
-                      )
-                      val showBubble = ime > 0 || prefs.getBoolean("full", false)
-                      applyBubble(showBubble, ime, bottom >= 0)
-                  } catch (e: Exception) {
-                      removeAll()
-                  }
-              }
-
-              private fun appMatch(): Boolean {
-                  val set = prefs.getStringSet("apps", null) ?: return false
-                  if (set.isEmpty()) return false
-                  for (w in windows) {
-                      if (w.type == AccessibilityWindowInfo.TYPE_APPLICATION && w.isActive) {
-                          val pkg = w.root?.packageName?.toString()
-                          if (pkg != null) return set.contains(pkg)
-                      }
-                  }
-                  return false
-              }
-
-              private fun applyVeil(
-                  bottom: Int,
-                  opacity: Int,
-                  colorIdx: Int,
-                  usePhoto: Boolean,
-                  ver: Int,
-                  through: Boolean
-              ) {
-                  if (bottom < 0) {
-                      hideVeil()
-                      return
-                  }
-                  val height = if (bottom == 0) WindowManager.LayoutParams.MATCH_PARENT else bottom
-                  val styleKey = "$opacity/$colorIdx/$usePhoto/$ver"
-
-                  if (veil != null && lastThrough != through) hideVeil()
-
-                  var v = veil
-                  if (v == null) {
-                      hideBubble()
-                      val iv = ImageView(this)
-                      iv.scaleType = ImageView.ScaleType.CENTER_CROP
-                      var flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                          WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                          WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                      if (through) {
-                          flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-                      } else {
-                          iv.setOnTouchListener { view, ev ->
-                              when (ev.actionMasked) {
-                                  MotionEvent.ACTION_DOWN -> view.alpha = 0f
-                                  MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> view.alpha = 1f
-                              }
-                              true
-                          }
-                      }
-                      val lp = WindowManager.LayoutParams(
-                          WindowManager.LayoutParams.MATCH_PARENT,
-                          height,
-                          WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                          flags,
-                          PixelFormat.TRANSLUCENT
-                      )
-                      lp.gravity = Gravity.TOP or Gravity.START
-                      wm.addView(iv, lp)
-                      veil = iv
-                      v = iv
-                      lastBottom = bottom
-                      lastThrough = through
-                      lastStyleKey = ""
-                  }
-
-                  if (lastStyleKey != styleKey) {
-                      styleVeil(v, opacity, colorIdx, usePhoto, ver)
-                      lastStyleKey = styleKey
-                  }
-                  if (lastBottom != bottom) {
-                      val lp = v.layoutParams as WindowManager.LayoutParams
-                      lp.height = height
-                      wm.updateViewLayout(v, lp)
-                      lastBottom = bottom
-                  }
-              }
-
-              private fun styleVeil(v: ImageView, opacity: Int, colorIdx: Int, usePhoto: Boolean, ver: Int) {
-                  val a = opacity.coerceIn(10, 95)
-                  if (usePhoto) {
-                      if (bmp == null || bmpVer != ver) {
-                          bmp = try {
-                              BitmapFactory.decodeFile(File(filesDir, "veil.jpg").path)
-                          } catch (e: Exception) {
-                              null
-                          }
-                          bmpVer = ver
-                      }
-                      val b = bmp
-                      if (b != null) {
-                          v.setBackgroundColor(Color.TRANSPARENT)
-                          v.setImageBitmap(b)
-                          v.imageAlpha = a * 255 / 100
-                          return
-                      }
-                  }
-                  v.setImageDrawable(null)
-                  val base = Cfg.colors[colorIdx.coerceIn(0, Cfg.colors.size - 1)]
-                  v.setBackgroundColor((base and 0x00FFFFFF) or ((a * 255 / 100) shl 24))
-              }
-
-              private fun applyBubble(show: Boolean, ime: Int, active: Boolean) {
-                  if (!show) {
-                      hideBubble()
-                      return
-                  }
-                  val size = dp(48)
-                  val dm = resources.displayMetrics
-                  val x = when (prefs.getInt("ctl", 2)) {
-                      0 -> dp(12)
-                      1 -> (dm.widthPixels - size) / 2
-                      else -> dm.widthPixels - size - dp(12)
-                  }
-                  val y = if (ime > 0) ime - size - dp(8) else (dm.heightPixels * 0.7f).toInt()
-                  val key = "$x/$y/$active"
-
-                  val b = bubble ?: createBubble(size, x, y)
-                  if (bubbleKey != key) {
-                      b.text = if (active) "👁" else "🛡"
-                      val lp = b.layoutParams as WindowManager.LayoutParams
-                      lp.x = x
-                      lp.y = y
-                      wm.updateViewLayout(b, lp)
-                      bubbleKey = key
-                  }
-              }
-
-              private fun createBubble(size: Int, x: Int, y: Int): TextView {
-                  val t = TextView(this)
-                  t.gravity = Gravity.CENTER
-                  t.textSize = 22f
-                  val bg = GradientDrawable()
-                  bg.shape = GradientDrawable.OVAL
-                  bg.setColor(0xCC333333.toInt())
-                  t.background = bg
-                  t.setOnClickListener { onBubbleTap() }
-                  val lp = WindowManager.LayoutParams(
-                      size,
-                      size,
-                      WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                          WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                          WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                      PixelFormat.TRANSLUCENT
-                  )
-                  lp.gravity = Gravity.TOP or Gravity.START
-                  lp.x = x
-                  lp.y = y
-                  wm.addView(t, lp)
-                  bubble = t
-                  bubbleKey = ""
-                  return t
-              }
-
-              private fun onBubbleTap() {
-                  if (prefs.getBoolean("full", false)) {
-                      prefs.edit().putBoolean("full", false).apply()
-                  } else {
-                      kbToggled = !kbToggled
-                      refresh()
-                  }
-              }
-
-              private fun hideVeil() {
-                  val v = veil ?: return
-                  try {
-                      wm.removeView(v)
-                  } catch (e: Exception) {
-                  }
-                  veil = null
-                  lastBottom = -2
-                  lastStyleKey = ""
-              }
-
-              private fun hideBubble() {
-                  val b = bubble ?: return
-                  try {
-                      wm.removeView(b)
-                  } catch (e: Exception) {
-                  }
-                  bubble = null
-                  bubbleKey = ""
-              }
-
-              private fun removeAll() {
-                  hideBubble()
-                  hideVeil()
+          class ToggleReceiver : BroadcastReceiver() {
+              override fun onReceive(context: Context, intent: Intent) {
+                  val p = context.getSharedPreferences(Cfg.PREFS, Context.MODE_PRIVATE)
+                  p.edit().putBoolean("full", !p.getBoolean("full", false)).apply()
               }
           }
           EOF
@@ -504,9 +510,892 @@ jobs:
                   val t = qsTile ?: return
                   val on = getSharedPreferences(Cfg.PREFS, MODE_PRIVATE).getBoolean("full", false)
                   t.state = if (on) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-                  t.label = getString(R.string.tile_label)
+                  t.label = Lang.wrap(this).getString(R.string.tile_label)
                   t.icon = Icon.createWithResource(this, android.R.drawable.ic_menu_view)
                   t.updateTile()
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/PreviewView.kt <<'EOF'
+          package com.hussein.veil
+
+          import android.content.Context
+          import android.graphics.Canvas
+          import android.graphics.Color
+          import android.graphics.Paint
+          import android.graphics.Path
+          import android.graphics.RectF
+          import android.view.View
+
+          class PreviewView(ctx: Context, private val compact: Boolean) : View(ctx) {
+
+              private val p = Paint(Paint.ANTI_ALIAS_FLAG)
+
+              override fun onMeasure(widthSpec: Int, heightSpec: Int) {
+                  val ww = MeasureSpec.getSize(widthSpec)
+                  setMeasuredDimension(ww, (ww * (if (compact) 0.62f else 0.69f)).toInt())
+              }
+
+              override fun onDraw(c: Canvas) {
+                  val d = resources.displayMetrics.density
+                  val w = width.toFloat()
+                  val h = height.toFloat()
+                  val clip = Path()
+                  clip.addRoundRect(RectF(0f, 0f, w, h), 10 * d, 10 * d, Path.Direction.CW)
+                  c.clipPath(clip)
+                  val split = h * 0.72f
+                  p.color = Color.BLACK
+                  c.drawRect(0f, 0f, w, split, p)
+                  p.color = 0xFF0D0E11.toInt()
+                  c.drawRoundRect(RectF(w * 0.05f, h * 0.06f, w * 0.62f, h * 0.12f), 6 * d, 6 * d, p)
+                  c.drawRoundRect(RectF(w * 0.05f, h * 0.3f, w * 0.75f, h * 0.36f), 6 * d, 6 * d, p)
+                  p.color = 0xFF150F08.toInt()
+                  c.drawRoundRect(RectF(w * 0.6f, h * 0.18f, w * 0.95f, h * 0.24f), 6 * d, 6 * d, p)
+                  c.drawRoundRect(RectF(w * 0.55f, h * 0.44f, w * 0.95f, h * 0.5f), 6 * d, 6 * d, p)
+                  p.color = Cfg.AMBER
+                  c.drawRect(0f, split, w, split + 2 * d, p)
+                  p.color = 0xFF0D1114.toInt()
+                  c.drawRect(0f, split + 2 * d, w, h, p)
+                  p.color = 0xFF1E2124.toInt()
+                  val kh = (h - split) / 4.2f
+                  val kw = w / 12f
+                  for (row in 0..2) {
+                      val n = if (row == 2) 7 else 10
+                      val x0 = (w - n * kw) / 2f
+                      for (i in 0 until n) {
+                          val l = x0 + i * kw + 2 * d
+                          val t = split + 2 * d + kh * 0.35f + row * kh * 1.05f
+                          c.drawRoundRect(RectF(l, t, l + kw - 4 * d, t + kh * 0.8f), 3 * d, 3 * d, p)
+                      }
+                  }
+                  val pl = w * 0.72f
+                  val pt = split + 2 * d + kh * 0.3f
+                  val pr = w * 0.97f
+                  val pb = pt + kh * 1.5f
+                  p.color = 0xFF14171A.toInt()
+                  c.drawRoundRect(RectF(pl, pt, pr, pb), 12 * d, 12 * d, p)
+                  p.color = Cfg.AMBER
+                  c.drawRoundRect(RectF(pl + (pr - pl) * 0.28f, pt + 4 * d, pr - 6 * d, pb - 4 * d), 10 * d, 10 * d, p)
+                  c.drawCircle(pl + (pr - pl) * 0.13f, (pt + pb) / 2f, 2.5f * d, p)
+                  p.color = Cfg.DARK
+                  p.textAlign = Paint.Align.CENTER
+                  p.textSize = 11 * d
+                  c.drawText(context.getString(R.string.veil_btn), pl + (pr - pl) * 0.64f, (pt + pb) / 2f + 4 * d, p)
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/DecoyView.kt <<'EOF'
+          package com.hussein.veil
+
+          import android.content.Context
+          import android.graphics.Canvas
+          import android.graphics.Paint
+          import android.text.TextPaint
+          import android.text.TextUtils
+          import android.view.View
+
+          class DecoyView(
+              ctx: Context,
+              private val kind: Int,
+              private val title: String,
+              private val lines: Array<String>
+          ) : View(ctx) {
+
+              private val p = TextPaint(Paint.ANTI_ALIAS_FLAG)
+
+              override fun onDraw(c: Canvas) {
+                  val d = resources.displayMetrics.density
+                  val rtl = layoutDirection == LAYOUT_DIRECTION_RTL
+                  c.drawColor(Cfg.decoyBg[kind])
+                  p.textAlign = if (rtl) Paint.Align.RIGHT else Paint.Align.LEFT
+                  val x = if (rtl) width - 22 * d else 22 * d
+                  val avail = width - 44 * d
+                  p.color = 0xFF1E1E1E.toInt()
+                  p.isFakeBoldText = true
+                  p.textSize = 30 * d
+                  c.drawText(title, x, 110 * d, p)
+                  p.isFakeBoldText = false
+                  p.textSize = 17 * d
+                  var y = 170 * d
+                  var i = 0
+                  while (y < height) {
+                      p.color = 0xFF3A3A3A.toInt()
+                      val s = TextUtils.ellipsize(lines[i % lines.size], p, avail, TextUtils.TruncateAt.END)
+                      c.drawText(s, 0, s.length, x, y, p)
+                      p.color = 0x22000000
+                      c.drawRect(22 * d, y + 18 * d, width - 22 * d, y + 19 * d, p)
+                      y += 56 * d
+                      i++
+                  }
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/Ui.kt <<'EOF'
+          package com.hussein.veil
+
+          import android.app.Activity
+          import android.content.Context
+          import android.content.res.ColorStateList
+          import android.graphics.Typeface
+          import android.graphics.drawable.GradientDrawable
+          import android.view.Gravity
+          import android.view.View
+          import android.view.ViewGroup
+          import android.widget.EditText
+          import android.widget.LinearLayout
+          import android.widget.ScrollView
+          import android.widget.SeekBar
+          import android.widget.Switch
+          import android.widget.TextView
+
+          fun buildPage(a: Activity): LinearLayout {
+              val d = a.resources.displayMetrics.density
+              val root = LinearLayout(a)
+              root.orientation = LinearLayout.VERTICAL
+              root.setPadding((22 * d).toInt(), (24 * d).toInt(), (22 * d).toInt(), (48 * d).toInt())
+              val sv = ScrollView(a)
+              sv.addView(root)
+              sv.background = GradientDrawable(
+                  GradientDrawable.Orientation.TOP_BOTTOM,
+                  intArrayOf(0xFF17181B.toInt(), 0xFF08090B.toInt())
+              )
+              a.window.statusBarColor = 0xFF17181B.toInt()
+              a.window.navigationBarColor = 0xFF08090B.toInt()
+              a.setContentView(sv)
+              return root
+          }
+
+          class Ui(private val ctx: Context, private val root: LinearLayout) {
+
+              private val d = ctx.resources.displayMetrics.density
+              private val p = ctx.getSharedPreferences(Cfg.PREFS, Context.MODE_PRIVATE)
+              private val ar = ctx.resources.configuration.locales[0].language == "ar"
+              private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
+              private val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
+
+              fun dp(v: Int): Int = (v * d).toInt()
+
+              private fun ls(v: Float): Float = if (ar) 0f else v
+
+              private fun rounded(color: Int, r: Int): GradientDrawable {
+                  val g = GradientDrawable()
+                  g.setColor(color)
+                  g.cornerRadius = r * d
+                  return g
+              }
+
+              private fun tv(text: String, size: Float, color: Int, bold: Boolean = false, spacing: Float = 0f): TextView {
+                  val t = TextView(ctx)
+                  t.text = text
+                  t.textSize = size
+                  t.setTextColor(color)
+                  if (bold) t.typeface = Typeface.DEFAULT_BOLD
+                  t.letterSpacing = ls(spacing)
+                  t.setLineSpacing(0f, 1.12f)
+                  return t
+              }
+
+              private fun lp(top: Int = 0): LinearLayout.LayoutParams {
+                  val l = LinearLayout.LayoutParams(MATCH, WRAP)
+                  l.topMargin = dp(top)
+                  return l
+              }
+
+              private fun styleSwitch(s: Switch) {
+                  val st = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+                  s.thumbTintList = ColorStateList(st, intArrayOf(Cfg.DARK, 0xFFBDBDBD.toInt()))
+                  s.trackTintList = ColorStateList(st, intArrayOf(Cfg.AMBER, 0xFF3A3A3A.toInt()))
+              }
+
+              fun section(text: String, top: Int = 40) {
+                  root.addView(tv(text, 13f, Cfg.AMBER, false, 0.15f), lp(top))
+              }
+
+              fun big(text: String) {
+                  root.addView(tv(text, 52f, Cfg.CREAM, true, 0.02f), lp(14))
+              }
+
+              fun accent() {
+                  val v = View(ctx)
+                  v.setBackgroundColor(Cfg.AMBER)
+                  val l = LinearLayout.LayoutParams(dp(48), dp(2))
+                  l.topMargin = dp(18)
+                  root.addView(v, l)
+              }
+
+              fun body(text: String, size: Float, color: Int, top: Int) {
+                  root.addView(tv(text, size, color), lp(top))
+              }
+
+              fun desc(text: String) {
+                  root.addView(tv(text, 15f, Cfg.DIM), lp(8))
+              }
+
+              fun divider() {
+                  val v = View(ctx)
+                  v.setBackgroundColor(Cfg.LINE)
+                  root.addView(v, LinearLayout.LayoutParams(MATCH, dp(1)))
+              }
+
+              fun preview(compact: Boolean) {
+                  root.addView(PreviewView(ctx, compact), lp(if (compact) 18 else 28))
+              }
+
+              private fun headRow(parent: LinearLayout, title: String, value: String?, top: Int): TextView {
+                  val row = LinearLayout(ctx)
+                  row.orientation = LinearLayout.HORIZONTAL
+                  row.gravity = Gravity.CENTER_VERTICAL
+                  val v = tv(value ?: "", 14f, Cfg.AMBER, false, 0.1f)
+                  row.addView(tv(title, 21f, Cfg.CREAM, true), LinearLayout.LayoutParams(0, WRAP, 1f))
+                  row.addView(v)
+                  parent.addView(row, lp(top))
+                  return v
+              }
+
+              fun head(title: String, value: String? = null, top: Int = 30): TextView = headRow(root, title, value, top)
+
+              fun slider(
+                  title: String,
+                  desc: String?,
+                  key: String,
+                  def: Int,
+                  min: Int,
+                  max: Int,
+                  fmt: (Int) -> String,
+                  onChange: (() -> Unit)? = null
+              ) {
+                  val v = head(title, fmt(p.getInt(key, def)))
+                  val bar = SeekBar(ctx)
+                  bar.max = max - min
+                  bar.progress = p.getInt(key, def) - min
+                  bar.progressTintList = ColorStateList.valueOf(Cfg.AMBER)
+                  bar.thumbTintList = ColorStateList.valueOf(Cfg.AMBER)
+                  bar.progressBackgroundTintList = ColorStateList.valueOf(0xFF2A2B2D.toInt())
+                  bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                      override fun onProgressChanged(sb: SeekBar?, pr: Int, fromUser: Boolean) {
+                          val x = pr + min
+                          v.text = fmt(x)
+                          p.edit().putInt(key, x).apply()
+                          onChange?.invoke()
+                      }
+
+                      override fun onStartTrackingTouch(sb: SeekBar?) {}
+
+                      override fun onStopTrackingTouch(sb: SeekBar?) {}
+                  })
+                  root.addView(bar, lp(10))
+                  if (desc != null) desc(desc)
+              }
+
+              fun chips(names: Array<String>, key: String, def: Int, onChange: ((Int) -> Unit)? = null) {
+                  val row = LinearLayout(ctx)
+                  row.orientation = LinearLayout.HORIZONTAL
+                  val tvs = ArrayList<TextView>()
+                  fun paint(sel: Int) {
+                      for (i in tvs.indices) {
+                          val on = i == sel
+                          tvs[i].setTextColor(if (on) Cfg.DARK else 0xFFBDBDBD.toInt())
+                          tvs[i].background = rounded(if (on) Cfg.AMBER else Cfg.CHIP, 4)
+                      }
+                  }
+                  for (i in names.indices) {
+                      val t = tv(names[i].uppercase(), 12.5f, Cfg.DIM, false, 0.12f)
+                      t.gravity = Gravity.CENTER
+                      t.setPadding(dp(4), dp(14), dp(4), dp(14))
+                      t.setOnClickListener {
+                          p.edit().putInt(key, i).apply()
+                          paint(i)
+                          onChange?.invoke(i)
+                      }
+                      val l = LinearLayout.LayoutParams(0, WRAP, 1f)
+                      if (i < names.size - 1) l.marginEnd = dp(8)
+                      tvs.add(t)
+                      row.addView(t, l)
+                  }
+                  paint(p.getInt(key, def))
+                  root.addView(row, lp(14))
+              }
+
+              fun toggle(title: String, desc: String, key: String, def: Boolean, onChange: ((Boolean) -> Unit)? = null): Switch {
+                  val row = LinearLayout(ctx)
+                  row.orientation = LinearLayout.HORIZONTAL
+                  row.gravity = Gravity.CENTER_VERTICAL
+                  val col = LinearLayout(ctx)
+                  col.orientation = LinearLayout.VERTICAL
+                  col.addView(tv(title, 21f, Cfg.CREAM, true))
+                  col.addView(tv(desc, 15f, Cfg.DIM), lp(6))
+                  val sw = Switch(ctx)
+                  styleSwitch(sw)
+                  sw.isChecked = p.getBoolean(key, def)
+                  sw.setOnCheckedChangeListener { _, c ->
+                      p.edit().putBoolean(key, c).apply()
+                      onChange?.invoke(c)
+                  }
+                  val l = LinearLayout.LayoutParams(0, WRAP, 1f)
+                  l.marginEnd = dp(14)
+                  row.addView(col, l)
+                  row.addView(sw)
+                  root.addView(row, lp(30))
+                  return sw
+              }
+
+              fun nav(title: String, desc: String, value: String, onClick: () -> Unit) {
+                  divider()
+                  val box = LinearLayout(ctx)
+                  box.orientation = LinearLayout.VERTICAL
+                  box.setPadding(0, dp(18), 0, dp(18))
+                  headRow(box, title, value, 0)
+                  box.addView(tv(desc, 15f, Cfg.DIM), lp(6))
+                  box.setOnClickListener { onClick() }
+                  root.addView(box, LinearLayout.LayoutParams(MATCH, WRAP))
+              }
+
+              fun setupRow(num: String, title: String, desc: String, status: String, onClick: () -> Unit) {
+                  divider()
+                  val row = LinearLayout(ctx)
+                  row.orientation = LinearLayout.HORIZONTAL
+                  row.setPadding(0, dp(18), 0, dp(18))
+                  row.addView(tv(num, 15f, Cfg.AMBER, false, 0.1f), LinearLayout.LayoutParams(dp(40), WRAP))
+                  val col = LinearLayout(ctx)
+                  col.orientation = LinearLayout.VERTICAL
+                  col.addView(tv(title, 22f, Cfg.CREAM, true))
+                  col.addView(tv(desc, 15f, Cfg.DIM), lp(4))
+                  row.addView(col, LinearLayout.LayoutParams(0, WRAP, 1f))
+                  row.addView(tv(status, 13f, Cfg.DIM, false, 0.15f))
+                  row.setOnClickListener { onClick() }
+                  root.addView(row, LinearLayout.LayoutParams(MATCH, WRAP))
+              }
+
+              fun armCard(title: String, desc: String, key: String, def: Boolean) {
+                  val card = LinearLayout(ctx)
+                  card.orientation = LinearLayout.HORIZONTAL
+                  card.setBackgroundColor(0xFF1C2330.toInt())
+                  val bar = View(ctx)
+                  bar.setBackgroundColor(0xFF3A4452.toInt())
+                  card.addView(bar, LinearLayout.LayoutParams(dp(3), MATCH))
+                  val inner = LinearLayout(ctx)
+                  inner.orientation = LinearLayout.HORIZONTAL
+                  inner.gravity = Gravity.CENTER_VERTICAL
+                  inner.setPadding(dp(18), dp(20), dp(18), dp(20))
+                  val col = LinearLayout(ctx)
+                  col.orientation = LinearLayout.VERTICAL
+                  col.addView(tv(title, 24f, Cfg.CREAM, true))
+                  col.addView(tv(desc, 15f, Cfg.DIM), lp(4))
+                  val sw = Switch(ctx)
+                  styleSwitch(sw)
+                  sw.isChecked = p.getBoolean(key, def)
+                  sw.setOnCheckedChangeListener { _, c -> p.edit().putBoolean(key, c).apply() }
+                  val l = LinearLayout.LayoutParams(0, WRAP, 1f)
+                  l.marginEnd = dp(12)
+                  inner.addView(col, l)
+                  inner.addView(sw)
+                  card.addView(inner, LinearLayout.LayoutParams(0, WRAP, 1f))
+                  root.addView(card, lp(28))
+              }
+
+              fun button(text: String, onClick: () -> Unit) {
+                  val b = tv(text.uppercase(), 14f, Cfg.DARK, true, 0.15f)
+                  b.gravity = Gravity.CENTER
+                  b.background = rounded(Cfg.AMBER, 4)
+                  b.setPadding(0, dp(16), 0, dp(16))
+                  b.setOnClickListener { onClick() }
+                  root.addView(b, lp(14))
+              }
+
+              fun link(text: String, onClick: () -> Unit) {
+                  val b = tv(text.uppercase(), 13f, Cfg.AMBER, false, 0.12f)
+                  b.setPadding(0, dp(14), 0, dp(4))
+                  b.setOnClickListener { onClick() }
+                  root.addView(b, lp(0))
+              }
+
+              fun input(hint: String): EditText {
+                  val e = EditText(ctx)
+                  e.hint = hint
+                  e.setHintTextColor(Cfg.DIM)
+                  e.setTextColor(Cfg.CREAM)
+                  e.background = rounded(0xFF16181B.toInt(), 6)
+                  e.setPadding(dp(18), dp(16), dp(18), dp(16))
+                  e.minLines = 3
+                  e.gravity = Gravity.TOP or Gravity.START
+                  root.addView(e, lp(18))
+                  return e
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/VeilService.kt <<'EOF'
+          package com.hussein.veil
+
+          import android.accessibilityservice.AccessibilityService
+          import android.app.Notification
+          import android.app.NotificationChannel
+          import android.app.NotificationManager
+          import android.app.PendingIntent
+          import android.content.Intent
+          import android.content.SharedPreferences
+          import android.graphics.Bitmap
+          import android.graphics.BitmapFactory
+          import android.graphics.Color
+          import android.graphics.PixelFormat
+          import android.graphics.Rect
+          import android.os.Build
+          import android.os.Handler
+          import android.os.Looper
+          import android.view.Gravity
+          import android.view.MotionEvent
+          import android.view.ViewConfiguration
+          import android.view.ViewGroup
+          import android.view.WindowManager
+          import android.view.WindowManager.LayoutParams as WLP
+          import android.view.accessibility.AccessibilityEvent
+          import android.view.accessibility.AccessibilityWindowInfo
+          import android.widget.FrameLayout
+          import android.widget.ImageView
+          import android.widget.TextView
+          import java.io.File
+          import java.util.Calendar
+          import kotlin.math.abs
+
+          class VeilService : AccessibilityService() {
+
+              companion object {
+                  private const val NOTIF_ID = 77
+                  private const val CHANNEL = "veil_control"
+              }
+
+              private val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
+              private val wm by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
+              private val prefs by lazy { getSharedPreferences(Cfg.PREFS, MODE_PRIVATE) }
+              private val handler = Handler(Looper.getMainLooper())
+
+              private var veil: FrameLayout? = null
+              private var bubble: TextView? = null
+              private var kbToggled = false
+              private var lastIme = -1
+              private var layoutKey = ""
+              private var styleKey = ""
+              private var lastThrough = true
+              private var lookKey = ""
+              private var bubbleKey = ""
+              private var dragging = false
+              private var notifKey = ""
+              private var bmp: Bitmap? = null
+              private var bmpVer = -1
+
+              private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refresh() }
+
+              override fun onServiceConnected() {
+                  super.onServiceConnected()
+                  prefs.registerOnSharedPreferenceChangeListener(listener)
+                  refresh()
+              }
+
+              override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+                  refresh()
+              }
+
+              override fun onInterrupt() {}
+
+              override fun onDestroy() {
+                  try {
+                      prefs.unregisterOnSharedPreferenceChangeListener(listener)
+                      getSystemService(NotificationManager::class.java)?.cancel(NOTIF_ID)
+                  } catch (e: Exception) {
+                  }
+                  removeAllNow()
+                  super.onDestroy()
+              }
+
+              private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+              private fun animMs(): Long = when (prefs.getInt("anim", 1)) {
+                  0 -> 450L
+                  1 -> 220L
+                  2 -> 110L
+                  else -> 0L
+              }
+
+              private fun statusBarHeight(): Int {
+                  val id = resources.getIdentifier("status_bar_height", "dimen", "android")
+                  return if (id > 0) resources.getDimensionPixelSize(id) else dp(24)
+              }
+
+              private fun refresh() {
+                  try {
+                      updateNotification()
+                      if (!prefs.getBoolean("on", true)) {
+                          removeAllNow()
+                          return
+                      }
+                      val dm = resources.displayMetrics
+                      var ime = -1
+                      val r = Rect()
+                      for (w in windows) {
+                          if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) {
+                              w.getBoundsInScreen(r)
+                              if (r.height() > 0 && r.top > 0) ime = r.top
+                          }
+                      }
+                      lastIme = ime
+                      if (ime < 0) kbToggled = false
+
+                      val manualFull = prefs.getBoolean("full", false)
+                      val full = manualFull || appMatch()
+                      val kbActive = ime > 0 && (prefs.getBoolean("kbauto", false) != kbToggled)
+                      val off = dp(prefs.getInt("offset", 0))
+
+                      val bottom = when {
+                          full -> if (ime > 0) minOf(ime + off, dm.heightPixels) else 0
+                          kbActive -> minOf(ime + off, dm.heightPixels)
+                          else -> -1
+                      }
+                      val topOff = if (prefs.getBoolean("cover", true)) 0 else statusBarHeight()
+                      val opacity = if (full) prefs.getInt("fopacity", 90) else prefs.getInt("opacity", 92)
+
+                      applyVeil(bottom, topOff, opacity, prefs.getBoolean("through", true))
+                      val showBubble = ime > 0 || manualFull || prefs.getBoolean("fab", false)
+                      applyBubble(showBubble, ime, bottom >= 0)
+                  } catch (e: Exception) {
+                      removeAllNow()
+                  }
+              }
+
+              private fun appMatch(): Boolean {
+                  val set = prefs.getStringSet("apps", null) ?: return false
+                  if (set.isEmpty()) return false
+                  if (prefs.getBoolean("qon", false)) {
+                      val h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                      val s = prefs.getInt("qs", 22)
+                      val e = prefs.getInt("qe", 7)
+                      val quiet = if (s == e) false else if (s < e) (h >= s && h < e) else (h >= s || h < e)
+                      if (quiet) return false
+                  }
+                  for (w in windows) {
+                      if (w.type == AccessibilityWindowInfo.TYPE_APPLICATION && w.isActive) {
+                          val pkg = w.root?.packageName?.toString()
+                          if (pkg != null) return set.contains(pkg)
+                      }
+                  }
+                  return false
+              }
+
+              private fun applyVeil(bottom: Int, topOff: Int, opacity: Int, through: Boolean) {
+                  if (bottom < 0) {
+                      hideVeil()
+                      return
+                  }
+                  val decoy = prefs.getInt("decoy", 0)
+                  val sKey = "$opacity/${prefs.getInt("vstyle", 3)}/${prefs.getBoolean("photo", false)}/${prefs.getInt("photoVer", 0)}/$decoy/${prefs.getString("lang", "")}"
+                  val height = if (bottom == 0) MATCH else maxOf(1, bottom - topOff)
+                  val lKey = "$height/$topOff"
+
+                  if (veil != null && lastThrough != through) hideVeilNow()
+
+                  var v = veil
+                  if (v == null) {
+                      hideBubble()
+                      val root = FrameLayout(this)
+                      var flags = WLP.FLAG_NOT_FOCUSABLE or WLP.FLAG_LAYOUT_IN_SCREEN or WLP.FLAG_LAYOUT_NO_LIMITS
+                      if (through) {
+                          flags = flags or WLP.FLAG_NOT_TOUCHABLE
+                      } else {
+                          root.setOnTouchListener { view, ev ->
+                              when (ev.actionMasked) {
+                                  MotionEvent.ACTION_DOWN -> view.alpha = 0f
+                                  MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> view.alpha = 1f
+                              }
+                              true
+                          }
+                      }
+                      val lp = WLP(MATCH, height, WLP.TYPE_ACCESSIBILITY_OVERLAY, flags, PixelFormat.TRANSLUCENT)
+                      lp.gravity = Gravity.TOP or Gravity.LEFT
+                      lp.y = topOff
+                      wm.addView(root, lp)
+                      veil = root
+                      v = root
+                      lastThrough = through
+                      layoutKey = lKey
+                      styleKey = ""
+                      val ms = animMs()
+                      if (ms > 0) {
+                          root.alpha = 0f
+                          root.animate().alpha(1f).setDuration(ms).start()
+                      }
+                  }
+
+                  if (styleKey != sKey) {
+                      buildVeilContent(v, opacity, decoy)
+                      styleKey = sKey
+                  }
+                  if (layoutKey != lKey) {
+                      val lp = v.layoutParams as WLP
+                      lp.height = height
+                      lp.y = topOff
+                      wm.updateViewLayout(v, lp)
+                      layoutKey = lKey
+                  }
+              }
+
+              private fun buildVeilContent(root: FrameLayout, opacity: Int, decoy: Int) {
+                  root.removeAllViews()
+                  val full = FrameLayout.LayoutParams(MATCH, MATCH)
+                  if (decoy in 1..4) {
+                      val res = Lang.wrap(this).resources
+                      val title = res.getStringArray(R.array.decoy_titles)[decoy - 1]
+                      val lines = res.getStringArray(
+                          when (decoy) {
+                              1 -> R.array.decoy_1
+                              2 -> R.array.decoy_2
+                              3 -> R.array.decoy_3
+                              else -> R.array.decoy_4
+                          }
+                      )
+                      root.addView(DecoyView(this, decoy, title, lines), full)
+                      return
+                  }
+                  val iv = ImageView(this)
+                  iv.scaleType = ImageView.ScaleType.CENTER_CROP
+                  val a = opacity.coerceIn(10, 100)
+                  var photoDone = false
+                  if (prefs.getBoolean("photo", false)) {
+                      val ver = prefs.getInt("photoVer", 0)
+                      if (bmp == null || bmpVer != ver) {
+                          bmp = try {
+                              BitmapFactory.decodeFile(File(filesDir, "veil.jpg").path)
+                          } catch (e: Exception) {
+                              null
+                          }
+                          bmpVer = ver
+                      }
+                      val b = bmp
+                      if (b != null) {
+                          iv.setBackgroundColor(Color.TRANSPARENT)
+                          iv.setImageBitmap(b)
+                          iv.imageAlpha = a * 255 / 100
+                          photoDone = true
+                      }
+                  }
+                  if (!photoDone) {
+                      val base = Cfg.veilColors[prefs.getInt("vstyle", 3).coerceIn(0, Cfg.veilColors.size - 1)]
+                      iv.setBackgroundColor((base and 0x00FFFFFF) or ((a * 255 / 100) shl 24))
+                  }
+                  root.addView(iv, full)
+              }
+
+              private fun applyBubble(show: Boolean, ime: Int, active: Boolean) {
+                  if (!show) {
+                      hideBubble()
+                      return
+                  }
+                  val dm = resources.displayMetrics
+                  val sizeDp = prefs.getInt("csize", 42)
+                  val h = dp(sizeDp)
+                  val w = (h * 2.1f).toInt()
+                  val look = "$sizeDp/${prefs.getInt("cshape", 0)}/${prefs.getInt("cstyle", 0)}/${prefs.getInt("ccolor", 0)}/${prefs.getString("lang", "")}"
+                  if (bubble != null && lookKey != look) hideBubble()
+
+                  val x: Int
+                  val y: Int
+                  if (prefs.getBoolean("moved", false)) {
+                      x = prefs.getInt("cx", 0).coerceIn(0, maxOf(0, dm.widthPixels - w))
+                      y = prefs.getInt("cy", 0).coerceIn(0, maxOf(0, dm.heightPixels - h))
+                  } else {
+                      x = when (prefs.getInt("ctl", 2)) {
+                          0 -> dp(12)
+                          1 -> (dm.widthPixels - w) / 2
+                          else -> dm.widthPixels - w - dp(12)
+                      }
+                      y = (if (ime > 0) ime - h - dp(8) else (dm.heightPixels * 0.7f).toInt()).coerceAtLeast(0)
+                  }
+
+                  val b = bubble ?: createBubble(w, h, x, y)
+                  lookKey = look
+                  val key = "$x/$y/$active"
+                  if (bubbleKey != key && !dragging) {
+                      b.text = Lang.wrap(this).getString(if (active) R.string.off_btn else R.string.veil_btn)
+                      val lp = b.layoutParams as WLP
+                      lp.x = x
+                      lp.y = y
+                      wm.updateViewLayout(b, lp)
+                      bubbleKey = key
+                  }
+              }
+
+              private fun createBubble(w: Int, h: Int, x: Int, y: Int): TextView {
+                  val t = TextView(this)
+                  Cfg.styleControl(this, t, prefs)
+                  val slop = ViewConfiguration.get(this).scaledTouchSlop
+                  var downX = 0f
+                  var downY = 0f
+                  var startX = 0
+                  var startY = 0
+                  var longPressed = false
+                  val longRun = Runnable {
+                      longPressed = true
+                      peek(true)
+                  }
+                  t.setOnTouchListener { v, ev ->
+                      val lp = v.layoutParams as WLP
+                      val dm = resources.displayMetrics
+                      when (ev.actionMasked) {
+                          MotionEvent.ACTION_DOWN -> {
+                              downX = ev.rawX
+                              downY = ev.rawY
+                              startX = lp.x
+                              startY = lp.y
+                              dragging = false
+                              longPressed = false
+                              handler.postDelayed(longRun, 350)
+                          }
+                          MotionEvent.ACTION_MOVE -> {
+                              val dx = ev.rawX - downX
+                              val dy = ev.rawY - downY
+                              if (!dragging && !longPressed && (abs(dx) > slop || abs(dy) > slop)) {
+                                  dragging = true
+                                  handler.removeCallbacks(longRun)
+                              }
+                              if (dragging) {
+                                  lp.x = (startX + dx).toInt().coerceIn(0, maxOf(0, dm.widthPixels - v.width))
+                                  lp.y = (startY + dy).toInt().coerceIn(0, maxOf(0, dm.heightPixels - v.height))
+                                  wm.updateViewLayout(v, lp)
+                              }
+                          }
+                          MotionEvent.ACTION_UP -> {
+                              handler.removeCallbacks(longRun)
+                              if (dragging) {
+                                  prefs.edit().putBoolean("moved", true).putInt("cx", lp.x).putInt("cy", lp.y).apply()
+                                  dragging = false
+                              } else if (longPressed) {
+                                  peek(false)
+                              } else {
+                                  onBubbleTap()
+                              }
+                          }
+                          MotionEvent.ACTION_CANCEL -> {
+                              handler.removeCallbacks(longRun)
+                              dragging = false
+                              if (longPressed) peek(false)
+                          }
+                      }
+                      true
+                  }
+                  val lp = WLP(
+                      w,
+                      h,
+                      WLP.TYPE_ACCESSIBILITY_OVERLAY,
+                      WLP.FLAG_NOT_FOCUSABLE or WLP.FLAG_LAYOUT_IN_SCREEN or WLP.FLAG_LAYOUT_NO_LIMITS,
+                      PixelFormat.TRANSLUCENT
+                  )
+                  lp.gravity = Gravity.TOP or Gravity.LEFT
+                  lp.x = x
+                  lp.y = y
+                  wm.addView(t, lp)
+                  bubble = t
+                  bubbleKey = ""
+                  return t
+              }
+
+              private fun peek(on: Boolean) {
+                  val v = veil ?: return
+                  v.animate().cancel()
+                  v.alpha = if (on) 0f else 1f
+              }
+
+              private fun onBubbleTap() {
+                  if (prefs.getBoolean("full", false)) {
+                      prefs.edit().putBoolean("full", false).apply()
+                  } else if (lastIme > 0) {
+                      kbToggled = !kbToggled
+                      refresh()
+                  } else {
+                      prefs.edit().putBoolean("full", true).apply()
+                  }
+              }
+
+              private fun updateNotification() {
+                  val nm = getSystemService(NotificationManager::class.java) ?: return
+                  val want = prefs.getBoolean("notif", false) && prefs.getBoolean("on", true)
+                  val full = prefs.getBoolean("full", false)
+                  val key = "$want/$full/${prefs.getString("lang", "")}"
+                  if (key == notifKey) return
+                  notifKey = key
+                  if (!want) {
+                      nm.cancel(NOTIF_ID)
+                      return
+                  }
+                  val lc = Lang.wrap(this)
+                  if (Build.VERSION.SDK_INT >= 26) {
+                      nm.createNotificationChannel(
+                          NotificationChannel(CHANNEL, lc.getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
+                      )
+                  }
+                  val pi = PendingIntent.getBroadcast(
+                      this,
+                      1,
+                      Intent(this, ToggleReceiver::class.java),
+                      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                  )
+                  val b = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL) else Notification.Builder(this)
+                  b.setSmallIcon(android.R.drawable.ic_menu_view)
+                  b.setContentTitle(lc.getString(R.string.app_title))
+                  b.setContentText(lc.getString(if (full) R.string.notif_on else R.string.notif_off))
+                  b.setContentIntent(pi)
+                  b.setOngoing(true)
+                  b.setOnlyAlertOnce(true)
+                  b.setShowWhen(false)
+                  nm.notify(NOTIF_ID, b.build())
+              }
+
+              private fun hideVeil() {
+                  val v = veil ?: return
+                  veil = null
+                  layoutKey = ""
+                  styleKey = ""
+                  val ms = animMs()
+                  if (ms > 0) {
+                      v.animate().cancel()
+                      v.animate().alpha(0f).setDuration(ms).withEndAction {
+                          try {
+                              wm.removeView(v)
+                          } catch (e: Exception) {
+                          }
+                      }.start()
+                  } else {
+                      try {
+                          wm.removeView(v)
+                      } catch (e: Exception) {
+                      }
+                  }
+              }
+
+              private fun hideVeilNow() {
+                  val v = veil ?: return
+                  try {
+                      wm.removeView(v)
+                  } catch (e: Exception) {
+                  }
+                  veil = null
+                  layoutKey = ""
+                  styleKey = ""
+              }
+
+              private fun hideBubble() {
+                  val b = bubble ?: return
+                  try {
+                      wm.removeView(b)
+                  } catch (e: Exception) {
+                  }
+                  bubble = null
+                  bubbleKey = ""
+              }
+
+              private fun removeAllNow() {
+                  hideBubble()
+                  hideVeilNow()
               }
           }
           EOF
@@ -515,18 +1404,28 @@ jobs:
           package com.hussein.veil
 
           import android.app.Activity
+          import android.content.Context
           import android.content.Intent
           import android.os.Bundle
+          import android.view.Gravity
           import android.widget.ArrayAdapter
+          import android.widget.LinearLayout
           import android.widget.ListView
+          import android.widget.TextView
 
           class AppsActivity : Activity() {
 
+              override fun attachBaseContext(newBase: Context) {
+                  super.attachBaseContext(Lang.wrap(newBase))
+              }
+
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  title = "ستارة تلقائية لتطبيقات معينة"
+                  val d = resources.displayMetrics.density
                   val p = getSharedPreferences(Cfg.PREFS, MODE_PRIVATE)
                   val pm = packageManager
+                  window.statusBarColor = 0xFF0B0C0E.toInt()
+                  window.navigationBarColor = 0xFF0B0C0E.toInt()
 
                   val launcher = Intent(Intent.ACTION_MAIN)
                   launcher.addCategory(Intent.CATEGORY_LAUNCHER)
@@ -537,6 +1436,13 @@ jobs:
                       .sortedBy { it.first.lowercase() }
 
                   val selected = HashSet<String>(p.getStringSet("apps", null) ?: emptySet<String>())
+
+                  val head = TextView(this)
+                  head.text = getString(R.string.apps_t)
+                  head.textSize = 22f
+                  head.setTextColor(Cfg.CREAM)
+                  head.gravity = Gravity.CENTER_VERTICAL
+                  head.setPadding((22 * d).toInt(), (20 * d).toInt(), (22 * d).toInt(), (12 * d).toInt())
 
                   val list = ListView(this)
                   list.choiceMode = ListView.CHOICE_MODE_MULTIPLE
@@ -553,7 +1459,111 @@ jobs:
                       if (list.isItemChecked(pos)) selected.add(pkg) else selected.remove(pkg)
                       p.edit().putStringSet("apps", HashSet<String>(selected)).apply()
                   }
-                  setContentView(list)
+
+                  val box = LinearLayout(this)
+                  box.orientation = LinearLayout.VERTICAL
+                  box.setBackgroundColor(0xFF0B0C0E.toInt())
+                  box.addView(head)
+                  box.addView(list, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+                  setContentView(box)
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/PageActivity.kt <<'EOF'
+          package com.hussein.veil
+
+          import android.Manifest
+          import android.app.Activity
+          import android.content.Context
+          import android.content.Intent
+          import android.content.SharedPreferences
+          import android.content.pm.PackageManager
+          import android.os.Build
+          import android.os.Bundle
+          import android.widget.LinearLayout
+          import android.widget.TextView
+
+          class PageActivity : Activity() {
+
+              private lateinit var p: SharedPreferences
+              private lateinit var root: LinearLayout
+
+              override fun attachBaseContext(newBase: Context) {
+                  super.attachBaseContext(Lang.wrap(newBase))
+              }
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  p = getSharedPreferences(Cfg.PREFS, MODE_PRIVATE)
+                  root = buildPage(this)
+              }
+
+              override fun onResume() {
+                  super.onResume()
+                  root.removeAllViews()
+                  when (intent.getStringExtra("page")) {
+                      "look" -> look()
+                      "whole" -> whole()
+                      else -> auto()
+                  }
+              }
+
+              private fun s(id: Int): String = getString(id)
+
+              private fun look() {
+                  val ui = Ui(this, root)
+                  ui.section(s(R.string.look_t), 0)
+                  val preview = TextView(this)
+                  preview.text = s(R.string.veil_btn)
+                  val plp = LinearLayout.LayoutParams(0, 0)
+                  plp.topMargin = ui.dp(26)
+                  plp.bottomMargin = ui.dp(6)
+                  root.addView(preview, plp)
+                  fun restyle() {
+                      val h = p.getInt("csize", 42)
+                      plp.width = ui.dp((h * 2.1f).toInt())
+                      plp.height = ui.dp(h)
+                      preview.layoutParams = plp
+                      Cfg.styleControl(this, preview, p)
+                  }
+                  restyle()
+                  ui.slider(s(R.string.look_size), null, "csize", 42, 28, 72, { "$it" }, { restyle() })
+                  ui.head(s(R.string.look_shape))
+                  ui.chips(resources.getStringArray(R.array.shape_names), "cshape", 0) { restyle() }
+                  ui.head(s(R.string.look_style))
+                  ui.chips(resources.getStringArray(R.array.cstyle_names), "cstyle", 0) { restyle() }
+                  ui.head(s(R.string.look_color))
+                  ui.chips(resources.getStringArray(R.array.ccolor_names), "ccolor", 0) { restyle() }
+              }
+
+              private fun whole() {
+                  val ui = Ui(this, root)
+                  ui.section(s(R.string.whole_t), 0)
+                  ui.desc(s(R.string.whole_d))
+                  ui.toggle(s(R.string.whole_now_t), s(R.string.whole_now_d), "full", false)
+                  ui.slider(s(R.string.fop_t), null, "fopacity", 90, 10, 100, { "$it%" })
+                  ui.toggle(s(R.string.notif_t), s(R.string.notif_d), "notif", false) { on ->
+                      if (on && Build.VERSION.SDK_INT >= 33 &&
+                          checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                      ) {
+                          requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+                      }
+                  }
+                  ui.toggle(s(R.string.fab_t), s(R.string.fab_d), "fab", false)
+              }
+
+              private fun auto() {
+                  val ui = Ui(this, root)
+                  ui.section(s(R.string.auto_t), 0)
+                  ui.desc(s(R.string.auto_d))
+                  ui.toggle(s(R.string.auto_kb_t), s(R.string.auto_kb_d), "kbauto", false)
+                  ui.nav(s(R.string.apps_t), s(R.string.auto_d), s(R.string.open)) {
+                      startActivity(Intent(this, AppsActivity::class.java))
+                  }
+                  ui.toggle(s(R.string.quiet_t), s(R.string.quiet_d), "qon", false)
+                  ui.slider(s(R.string.quiet_t), null, "qs", 22, 0, 23, { getString(R.string.quiet_from, it) })
+                  ui.slider(s(R.string.quiet_t), null, "qe", 7, 0, 23, { getString(R.string.quiet_to, it) })
               }
           }
           EOF
@@ -562,22 +1572,19 @@ jobs:
           package com.hussein.veil
 
           import android.app.Activity
+          import android.app.AlertDialog
+          import android.app.StatusBarManager
+          import android.content.ComponentName
+          import android.content.Context
           import android.content.Intent
           import android.content.SharedPreferences
           import android.graphics.Bitmap
           import android.graphics.BitmapFactory
+          import android.graphics.drawable.Icon
+          import android.os.Build
           import android.os.Bundle
           import android.provider.Settings
-          import android.view.View
-          import android.widget.AdapterView
-          import android.widget.ArrayAdapter
-          import android.widget.Button
           import android.widget.LinearLayout
-          import android.widget.ScrollView
-          import android.widget.SeekBar
-          import android.widget.Spinner
-          import android.widget.Switch
-          import android.widget.TextView
           import android.widget.Toast
           import java.io.File
           import java.io.FileOutputStream
@@ -585,68 +1592,145 @@ jobs:
           class MainActivity : Activity() {
 
               private lateinit var p: SharedPreferences
-              private lateinit var status: TextView
-              private lateinit var fullSw: Switch
               private lateinit var root: LinearLayout
-              private var pad = 0
               private val pickCode = 7
+
+              override fun attachBaseContext(newBase: Context) {
+                  super.attachBaseContext(Lang.wrap(newBase))
+              }
 
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   p = getSharedPreferences(Cfg.PREFS, MODE_PRIVATE)
-                  pad = (16 * resources.displayMetrics.density).toInt()
+                  root = buildPage(this)
+              }
 
-                  root = LinearLayout(this)
-                  root.orientation = LinearLayout.VERTICAL
-                  root.setPadding(pad, pad, pad, pad)
+              override fun onResume() {
+                  super.onResume()
+                  build()
+              }
 
-                  addText(getString(R.string.app_name), 26f, 0)
-                  status = addText("", 16f, pad / 2)
-                  addButton("فتح إعدادات سهولة الاستخدام لتفعيل الخدمة") {
-                      startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                  }
+              private fun s(id: Int): String = getString(id)
 
-                  addSwitch("تفعيل Veil (المفتاح الرئيسي)", "on", true)
-                  fullSw = addSwitch("ستارة على الشاشة كاملة الآن (بدون كيبورد)", "full", false)
-                  addSwitch("تعتيم تلقائي لما الكيبورد يظهر (الزر الصغير يرفع الستارة أو يرجّعها)", "kbauto", true)
-                  addSwitch("اللمس يمر من خلال الستارة (لو أوقفته: اضغط مطولًا على الستارة لتشوف تحتها)", "through", true)
+              private fun arr(id: Int): Array<String> = resources.getStringArray(id)
 
-                  addSeek("درجة التعتيم", "opacity", 85, 10, 95)
-                  addSpinner("لون الستارة", Cfg.colorNames, "color", 0)
+              private fun page(name: String) {
+                  val i = Intent(this, PageActivity::class.java)
+                  i.putExtra("page", name)
+                  startActivity(i)
+              }
 
-                  addButton("اختيار صورة كستارة") {
+              private fun build() {
+                  root.removeAllViews()
+                  val ui = Ui(this, root)
+                  val on = isServiceEnabled()
+                  val status = s(if (on) R.string.ready else R.string.allow)
+                  val openAcc: () -> Unit = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+
+                  ui.section(s(R.string.privacy_layer), 0)
+                  ui.big("VEIL")
+                  ui.accent()
+                  ui.body(s(R.string.intro), 20f, 0xFFA8A8A8.toInt(), 22)
+                  ui.preview(false)
+                  ui.body(s(R.string.intro2), 16f, Cfg.DIM, 16)
+
+                  ui.section(s(R.string.setup))
+                  ui.setupRow("01", s(R.string.s1_t), s(R.string.s1_d), status, openAcc)
+                  ui.setupRow("02", s(R.string.s2_t), s(R.string.s2_d), status, openAcc)
+                  ui.armCard(s(R.string.arm_t), s(R.string.arm_d), "on", true)
+
+                  ui.section(s(R.string.tuning))
+                  ui.preview(true)
+                  ui.slider(s(R.string.opacity_t), s(R.string.opacity_d), "opacity", 92, 10, 100, { "$it%" })
+
+                  ui.head(s(R.string.photo_t))
+                  ui.button(s(R.string.choose)) {
                       val i = Intent(Intent.ACTION_OPEN_DOCUMENT)
                       i.addCategory(Intent.CATEGORY_OPENABLE)
                       i.type = "image/*"
                       startActivityForResult(i, pickCode)
                   }
-                  addButton("إزالة الصورة والرجوع للون") {
-                      p.edit().putBoolean("photo", false).apply()
-                      Toast.makeText(this, "تم", Toast.LENGTH_SHORT).show()
+                  ui.link(s(R.string.remove_photo)) { p.edit().putBoolean("photo", false).apply() }
+                  ui.desc(s(R.string.photo_d))
+
+                  ui.head(s(R.string.decoy_t))
+                  ui.chips(arr(R.array.decoy_names), "decoy", 0)
+                  ui.desc(s(R.string.decoy_d))
+
+                  ui.head(s(R.string.style_t))
+                  ui.chips(arr(R.array.vstyle_names), "vstyle", 3)
+                  ui.desc(s(R.string.style_d))
+
+                  val none = s(R.string.none)
+                  ui.slider(s(R.string.offset_t), s(R.string.offset_d), "offset", 0, 0, 150, { if (it == 0) none else "$it dp" })
+
+                  ui.toggle(s(R.string.under_t), s(R.string.under_d), "through", true)
+                  ui.toggle(s(R.string.cover_t), s(R.string.cover_d), "cover", true)
+
+                  val moved = ui.head(s(R.string.pos_t), if (p.getBoolean("moved", false)) s(R.string.moved) else null)
+                  ui.chips(arr(R.array.pos_names), "ctl", 2) {
+                      p.edit().putBoolean("moved", false).apply()
+                      moved.text = ""
+                  }
+                  ui.desc(s(R.string.pos_d))
+
+                  val size = p.getInt("csize", 42)
+                  val shape = arr(R.array.shape_names)[p.getInt("cshape", 0).coerceIn(0, 2)]
+                  val style = arr(R.array.cstyle_names)[p.getInt("cstyle", 0).coerceIn(0, 2)]
+                  val color = arr(R.array.ccolor_names)[p.getInt("ccolor", 0).coerceIn(0, 4)]
+                  ui.nav(s(R.string.look_t), "$size · $shape · $style · $color", s(R.string.open).uppercase()) { page("look") }
+
+                  ui.head(s(R.string.anim_t))
+                  ui.chips(arr(R.array.anim_names), "anim", 1)
+
+                  ui.nav(s(R.string.whole_t), s(R.string.whole_d), s(R.string.open).uppercase()) { page("whole") }
+                  ui.nav(s(R.string.auto_t), s(R.string.auto_d), s(R.string.open).uppercase()) { page("auto") }
+                  ui.nav(s(R.string.tile_t), s(R.string.tile_d), s(R.string.add).uppercase()) { addTile() }
+
+                  ui.section(s(R.string.try_t))
+                  ui.input(s(if (on && p.getBoolean("on", true)) R.string.try_on else R.string.try_off))
+                  ui.desc(s(R.string.try_d))
+
+                  ui.section(s(R.string.wild_t))
+                  val steps = intArrayOf(R.string.w1, R.string.w2, R.string.w3, R.string.w4, R.string.w5)
+                  for (i in steps.indices) {
+                      ui.body("0${i + 1}   " + s(steps[i]), 16f, 0xFFA8A8A8.toInt(), 14)
                   }
 
-                  addSeek("إزاحة الستارة لأسفل لتغطية شريط اقتراحات الكيبورد", "offset", 0, 0, 150)
-                  addSpinner("مكان الزر الصغير", Cfg.ctlNames, "ctl", 2)
-
-                  addButton("ستارة تلقائية لتطبيقات معينة") {
-                      startActivity(Intent(this, AppsActivity::class.java))
+                  ui.section(s(R.string.support))
+                  val codes = arrayOf("", "en", "ar")
+                  val names = arr(R.array.lang_names)
+                  val cur = maxOf(0, codes.indexOf(p.getString("lang", "") ?: ""))
+                  ui.nav(s(R.string.lang_t), s(R.string.lang_d), names[cur].uppercase()) {
+                      AlertDialog.Builder(this).setItems(names) { _, i ->
+                          p.edit().putString("lang", codes[i]).apply()
+                          recreate()
+                      }.show()
                   }
-
-                  addText(getString(R.string.note), 14f, pad)
-
-                  val scroll = ScrollView(this)
-                  scroll.addView(root)
-                  setContentView(scroll)
+                  ui.nav(s(R.string.about_t), s(R.string.about_d), "") {
+                      AlertDialog.Builder(this).setTitle(s(R.string.about_t)).setMessage(s(R.string.about_msg)).show()
+                  }
+                  ui.link(s(R.string.replay)) {
+                      val t = steps.indices.joinToString("\n\n") { "${it + 1}. " + s(steps[it]) }
+                      AlertDialog.Builder(this).setTitle(s(R.string.walk_t)).setMessage(t).show()
+                  }
               }
 
-              override fun onResume() {
-                  super.onResume()
-                  status.text = if (isServiceEnabled()) {
-                      "✅ الخدمة مفعّلة"
-                  } else {
-                      "⚠️ الخدمة غير مفعّلة. اضغط الزر بالأسفل، ثم التطبيقات المثبتة، ثم Veil، ثم فعّلها."
+              private fun addTile() {
+                  if (Build.VERSION.SDK_INT >= 33) {
+                      try {
+                          val sbm = getSystemService(StatusBarManager::class.java)
+                          sbm.requestAddTileService(
+                              ComponentName(this, VeilTile::class.java),
+                              s(R.string.tile_label),
+                              Icon.createWithResource(this, android.R.drawable.ic_menu_view),
+                              mainExecutor
+                          ) { }
+                          return
+                      } catch (e: Exception) {
+                      }
                   }
-                  fullSw.isChecked = p.getBoolean("full", false)
+                  Toast.makeText(this, s(R.string.tile_hint), Toast.LENGTH_LONG).show()
               }
 
               override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -657,92 +1741,31 @@ jobs:
                       val o = BitmapFactory.Options()
                       o.inJustDecodeBounds = true
                       contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, o) }
-                      var s = 1
-                      while (o.outWidth / s > 1600 || o.outHeight / s > 1600) s *= 2
+                      var sample = 1
+                      while (o.outWidth / sample > 1600 || o.outHeight / sample > 1600) sample *= 2
                       val o2 = BitmapFactory.Options()
-                      o2.inSampleSize = s
+                      o2.inSampleSize = sample
                       val bmp = contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, o2) }
                       if (bmp == null) {
-                          Toast.makeText(this, "تعذّر فتح الصورة", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(this, s(R.string.photo_fail), Toast.LENGTH_SHORT).show()
                           return
                       }
                       FileOutputStream(File(filesDir, "veil.jpg")).use {
                           bmp.compress(Bitmap.CompressFormat.JPEG, 90, it)
                       }
                       p.edit().putBoolean("photo", true).putInt("photoVer", p.getInt("photoVer", 0) + 1).apply()
-                      Toast.makeText(this, "تم تعيين الصورة كستارة", Toast.LENGTH_SHORT).show()
+                      Toast.makeText(this, s(R.string.photo_ok), Toast.LENGTH_SHORT).show()
                   } catch (e: Exception) {
-                      Toast.makeText(this, "تعذّر فتح الصورة", Toast.LENGTH_SHORT).show()
+                      Toast.makeText(this, s(R.string.photo_fail), Toast.LENGTH_SHORT).show()
                   }
               }
 
               private fun isServiceEnabled(): Boolean {
-                  val s = Settings.Secure.getString(
+                  val v = Settings.Secure.getString(
                       contentResolver,
                       Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
                   ) ?: return false
-                  return s.contains("$packageName/")
-              }
-
-              private fun addText(text: String, size: Float, top: Int): TextView {
-                  val t = TextView(this)
-                  t.text = text
-                  t.textSize = size
-                  t.setPadding(0, top, 0, 0)
-                  root.addView(t)
-                  return t
-              }
-
-              private fun addButton(label: String, onClick: () -> Unit): Button {
-                  val b = Button(this)
-                  b.text = label
-                  b.setOnClickListener { onClick() }
-                  root.addView(b)
-                  return b
-              }
-
-              private fun addSwitch(label: String, key: String, def: Boolean): Switch {
-                  val s = Switch(this)
-                  s.text = label
-                  s.isChecked = p.getBoolean(key, def)
-                  s.setPadding(0, pad, 0, 0)
-                  s.setOnCheckedChangeListener { _, checked ->
-                      p.edit().putBoolean(key, checked).apply()
-                  }
-                  root.addView(s)
-                  return s
-              }
-
-              private fun addSeek(label: String, key: String, def: Int, min: Int, max: Int) {
-                  addText(label, 14f, pad)
-                  val bar = SeekBar(this)
-                  bar.max = max
-                  bar.progress = p.getInt(key, def)
-                  bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                      override fun onProgressChanged(sb: SeekBar?, v: Int, fromUser: Boolean) {
-                          p.edit().putInt(key, maxOf(min, v)).apply()
-                      }
-
-                      override fun onStartTrackingTouch(sb: SeekBar?) {}
-
-                      override fun onStopTrackingTouch(sb: SeekBar?) {}
-                  })
-                  root.addView(bar)
-              }
-
-              private fun addSpinner(label: String, names: Array<String>, key: String, def: Int) {
-                  addText(label, 14f, pad)
-                  val sp = Spinner(this)
-                  sp.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, names)
-                  sp.setSelection(p.getInt(key, def))
-                  sp.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                      override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-                          p.edit().putInt(key, pos).apply()
-                      }
-
-                      override fun onNothingSelected(parent: AdapterView<*>?) {}
-                  }
-                  root.addView(sp)
+                  return v.contains("$packageName/")
               }
           }
           EOF
