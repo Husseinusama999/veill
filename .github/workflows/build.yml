@@ -1,0 +1,758 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Prepare Android SDK
+        run: |
+          SDKM="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-34" "build-tools;34.0.0" || true
+
+      - name: Generate project files
+        run: |
+          mkdir -p app/src/main/java/com/hussein/veil app/src/main/res/xml app/src/main/res/values
+
+          cat > settings.gradle.kts <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "Veil"
+          include(":app")
+          EOF
+
+          cat > build.gradle.kts <<'EOF'
+          plugins {
+              id("com.android.application") version "8.5.2" apply false
+              id("org.jetbrains.kotlin.android") version "1.9.24" apply false
+          }
+          EOF
+
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
+          android.nonTransitiveRClass=true
+          kotlin.code.style=official
+          EOF
+
+          cat > app/build.gradle.kts <<'EOF'
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+
+          android {
+              namespace = "com.hussein.veil"
+              compileSdk = 34
+
+              defaultConfig {
+                  applicationId = "com.hussein.veil"
+                  minSdk = 24
+                  targetSdk = 34
+                  versionCode = 2
+                  versionName = "2.0"
+              }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <queries>
+                  <intent>
+                      <action android:name="android.intent.action.MAIN" />
+                      <category android:name="android.intent.category.LAUNCHER" />
+                  </intent>
+              </queries>
+
+              <application
+                  android:allowBackup="false"
+                  android:icon="@android:drawable/ic_menu_view"
+                  android:label="@string/app_name"
+                  android:supportsRtl="true"
+                  android:theme="@android:style/Theme.DeviceDefault.Light">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+
+                  <activity
+                      android:name=".AppsActivity"
+                      android:exported="false" />
+
+                  <service
+                      android:name=".VeilService"
+                      android:exported="true"
+                      android:label="@string/app_name"
+                      android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+                      <intent-filter>
+                          <action android:name="android.accessibilityservice.AccessibilityService" />
+                      </intent-filter>
+                      <meta-data
+                          android:name="android.accessibilityservice"
+                          android:resource="@xml/accessibility" />
+                  </service>
+
+                  <service
+                      android:name=".VeilTile"
+                      android:exported="true"
+                      android:icon="@android:drawable/ic_menu_view"
+                      android:label="@string/tile_label"
+                      android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+                      <intent-filter>
+                          <action android:name="android.service.quicksettings.action.QS_TILE" />
+                      </intent-filter>
+                  </service>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/res/xml/accessibility.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+              android:accessibilityEventTypes="typeWindowsChanged|typeWindowStateChanged"
+              android:accessibilityFeedbackType="feedbackGeneric"
+              android:accessibilityFlags="flagRetrieveInteractiveWindows"
+              android:canRetrieveWindowContent="true"
+              android:notificationTimeout="50"
+              android:description="@string/service_desc" />
+          EOF
+
+          cat > app/src/main/res/values/strings.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">Veil - ستارة الخصوصية</string>
+              <string name="tile_label">ستارة الشاشة</string>
+              <string name="service_desc">يعتّم الشاشة (فوق الكيبورد أو الشاشة كاملة) لحمايتك من نظرات من بجانبك. لا يقرأ ولا يخزن ولا يرسل أي شيء تكتبه، ولا يحتاج إنترنت.</string>
+              <string name="note">طريقة العمل:\n- مع الكيبورد: لما الكيبورد يظهر تتعتم الشاشة فوقه، والزر الصغير 👁 يرفع الستارة أو يرجّعها.\n- بدون كيبورد: فعّل ستارة الشاشة كاملة من هنا أو من لوحة الإعدادات السريعة (اسحب من فوق، اضغط على القلم، وأضف بلاطة ستارة الشاشة).\n- تطبيقات معينة: اختر تطبيقات البنوك مثلًا وتتعتم تلقائيًا لما تفتحها.\n\nالتطبيق لا يقرأ ما تكتبه ولا يرسل أي بيانات. بعد التفعيل يرجع تلقائيًا بعد إعادة تشغيل الهاتف.\n\nلو خيار التفعيل رمادي (أندرويد 13 وما بعده): افتح معلومات التطبيق من إعدادات الهاتف، اضغط النقاط الثلاث، اختر السماح بالإعدادات المقيّدة، ثم فعّل الخدمة.</string>
+          </resources>
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/Cfg.kt <<'EOF'
+          package com.hussein.veil
+
+          object Cfg {
+              const val PREFS = "s"
+
+              val colors = intArrayOf(
+                  0xFF000000.toInt(),
+                  0xFF202020.toInt(),
+                  0xFF0A1A3A.toInt(),
+                  0xFF0A2A14.toInt(),
+                  0xFF2A0A0A.toInt()
+              )
+              val colorNames = arrayOf("أسود", "رمادي غامق", "كحلي", "أخضر غامق", "عنابي غامق")
+              val ctlNames = arrayOf("يسار", "وسط", "يمين")
+          }
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/VeilService.kt <<'EOF'
+          package com.hussein.veil
+
+          import android.accessibilityservice.AccessibilityService
+          import android.content.SharedPreferences
+          import android.graphics.Bitmap
+          import android.graphics.BitmapFactory
+          import android.graphics.Color
+          import android.graphics.PixelFormat
+          import android.graphics.Rect
+          import android.graphics.drawable.GradientDrawable
+          import android.view.Gravity
+          import android.view.MotionEvent
+          import android.view.WindowManager
+          import android.view.accessibility.AccessibilityEvent
+          import android.view.accessibility.AccessibilityWindowInfo
+          import android.widget.ImageView
+          import android.widget.TextView
+          import java.io.File
+
+          class VeilService : AccessibilityService() {
+
+              private val wm by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
+              private val prefs by lazy { getSharedPreferences(Cfg.PREFS, MODE_PRIVATE) }
+
+              private var veil: ImageView? = null
+              private var bubble: TextView? = null
+              private var kbToggled = false
+              private var lastBottom = -2
+              private var lastStyleKey = ""
+              private var lastThrough = true
+              private var bubbleKey = ""
+              private var bmp: Bitmap? = null
+              private var bmpVer = -1
+
+              private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refresh() }
+
+              override fun onServiceConnected() {
+                  super.onServiceConnected()
+                  prefs.registerOnSharedPreferenceChangeListener(listener)
+                  refresh()
+              }
+
+              override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+                  refresh()
+              }
+
+              override fun onInterrupt() {}
+
+              override fun onDestroy() {
+                  try {
+                      prefs.unregisterOnSharedPreferenceChangeListener(listener)
+                  } catch (e: Exception) {
+                  }
+                  removeAll()
+                  super.onDestroy()
+              }
+
+              private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+              private fun refresh() {
+                  try {
+                      if (!prefs.getBoolean("on", true)) {
+                          removeAll()
+                          return
+                      }
+                      val dm = resources.displayMetrics
+                      var ime = -1
+                      val r = Rect()
+                      for (w in windows) {
+                          if (w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD) {
+                              w.getBoundsInScreen(r)
+                              if (r.height() > 0 && r.top > 0) ime = r.top
+                          }
+                      }
+                      if (ime < 0) kbToggled = false
+
+                      val full = prefs.getBoolean("full", false) || appMatch()
+                      val kbActive = ime > 0 && (prefs.getBoolean("kbauto", true) != kbToggled)
+                      val off = dp(prefs.getInt("offset", 0))
+
+                      val bottom = when {
+                          full -> if (ime > 0) minOf(ime + off, dm.heightPixels) else 0
+                          kbActive -> minOf(ime + off, dm.heightPixels)
+                          else -> -1
+                      }
+
+                      applyVeil(
+                          bottom,
+                          prefs.getInt("opacity", 85),
+                          prefs.getInt("color", 0),
+                          prefs.getBoolean("photo", false),
+                          prefs.getInt("photoVer", 0),
+                          prefs.getBoolean("through", true)
+                      )
+                      val showBubble = ime > 0 || prefs.getBoolean("full", false)
+                      applyBubble(showBubble, ime, bottom >= 0)
+                  } catch (e: Exception) {
+                      removeAll()
+                  }
+              }
+
+              private fun appMatch(): Boolean {
+                  val set = prefs.getStringSet("apps", null) ?: return false
+                  if (set.isEmpty()) return false
+                  for (w in windows) {
+                      if (w.type == AccessibilityWindowInfo.TYPE_APPLICATION && w.isActive) {
+                          val pkg = w.root?.packageName?.toString()
+                          if (pkg != null) return set.contains(pkg)
+                      }
+                  }
+                  return false
+              }
+
+              private fun applyVeil(
+                  bottom: Int,
+                  opacity: Int,
+                  colorIdx: Int,
+                  usePhoto: Boolean,
+                  ver: Int,
+                  through: Boolean
+              ) {
+                  if (bottom < 0) {
+                      hideVeil()
+                      return
+                  }
+                  val height = if (bottom == 0) WindowManager.LayoutParams.MATCH_PARENT else bottom
+                  val styleKey = "$opacity/$colorIdx/$usePhoto/$ver"
+
+                  if (veil != null && lastThrough != through) hideVeil()
+
+                  var v = veil
+                  if (v == null) {
+                      hideBubble()
+                      val iv = ImageView(this)
+                      iv.scaleType = ImageView.ScaleType.CENTER_CROP
+                      var flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                          WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                          WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                      if (through) {
+                          flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                      } else {
+                          iv.setOnTouchListener { view, ev ->
+                              when (ev.actionMasked) {
+                                  MotionEvent.ACTION_DOWN -> view.alpha = 0f
+                                  MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> view.alpha = 1f
+                              }
+                              true
+                          }
+                      }
+                      val lp = WindowManager.LayoutParams(
+                          WindowManager.LayoutParams.MATCH_PARENT,
+                          height,
+                          WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                          flags,
+                          PixelFormat.TRANSLUCENT
+                      )
+                      lp.gravity = Gravity.TOP or Gravity.START
+                      wm.addView(iv, lp)
+                      veil = iv
+                      v = iv
+                      lastBottom = bottom
+                      lastThrough = through
+                      lastStyleKey = ""
+                  }
+
+                  if (lastStyleKey != styleKey) {
+                      styleVeil(v, opacity, colorIdx, usePhoto, ver)
+                      lastStyleKey = styleKey
+                  }
+                  if (lastBottom != bottom) {
+                      val lp = v.layoutParams as WindowManager.LayoutParams
+                      lp.height = height
+                      wm.updateViewLayout(v, lp)
+                      lastBottom = bottom
+                  }
+              }
+
+              private fun styleVeil(v: ImageView, opacity: Int, colorIdx: Int, usePhoto: Boolean, ver: Int) {
+                  val a = opacity.coerceIn(10, 95)
+                  if (usePhoto) {
+                      if (bmp == null || bmpVer != ver) {
+                          bmp = try {
+                              BitmapFactory.decodeFile(File(filesDir, "veil.jpg").path)
+                          } catch (e: Exception) {
+                              null
+                          }
+                          bmpVer = ver
+                      }
+                      val b = bmp
+                      if (b != null) {
+                          v.setBackgroundColor(Color.TRANSPARENT)
+                          v.setImageBitmap(b)
+                          v.imageAlpha = a * 255 / 100
+                          return
+                      }
+                  }
+                  v.setImageDrawable(null)
+                  val base = Cfg.colors[colorIdx.coerceIn(0, Cfg.colors.size - 1)]
+                  v.setBackgroundColor((base and 0x00FFFFFF) or ((a * 255 / 100) shl 24))
+              }
+
+              private fun applyBubble(show: Boolean, ime: Int, active: Boolean) {
+                  if (!show) {
+                      hideBubble()
+                      return
+                  }
+                  val size = dp(48)
+                  val dm = resources.displayMetrics
+                  val x = when (prefs.getInt("ctl", 2)) {
+                      0 -> dp(12)
+                      1 -> (dm.widthPixels - size) / 2
+                      else -> dm.widthPixels - size - dp(12)
+                  }
+                  val y = if (ime > 0) ime - size - dp(8) else (dm.heightPixels * 0.7f).toInt()
+                  val key = "$x/$y/$active"
+
+                  val b = bubble ?: createBubble(size, x, y)
+                  if (bubbleKey != key) {
+                      b.text = if (active) "👁" else "🛡"
+                      val lp = b.layoutParams as WindowManager.LayoutParams
+                      lp.x = x
+                      lp.y = y
+                      wm.updateViewLayout(b, lp)
+                      bubbleKey = key
+                  }
+              }
+
+              private fun createBubble(size: Int, x: Int, y: Int): TextView {
+                  val t = TextView(this)
+                  t.gravity = Gravity.CENTER
+                  t.textSize = 22f
+                  val bg = GradientDrawable()
+                  bg.shape = GradientDrawable.OVAL
+                  bg.setColor(0xCC333333.toInt())
+                  t.background = bg
+                  t.setOnClickListener { onBubbleTap() }
+                  val lp = WindowManager.LayoutParams(
+                      size,
+                      size,
+                      WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                          WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                          WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                      PixelFormat.TRANSLUCENT
+                  )
+                  lp.gravity = Gravity.TOP or Gravity.START
+                  lp.x = x
+                  lp.y = y
+                  wm.addView(t, lp)
+                  bubble = t
+                  bubbleKey = ""
+                  return t
+              }
+
+              private fun onBubbleTap() {
+                  if (prefs.getBoolean("full", false)) {
+                      prefs.edit().putBoolean("full", false).apply()
+                  } else {
+                      kbToggled = !kbToggled
+                      refresh()
+                  }
+              }
+
+              private fun hideVeil() {
+                  val v = veil ?: return
+                  try {
+                      wm.removeView(v)
+                  } catch (e: Exception) {
+                  }
+                  veil = null
+                  lastBottom = -2
+                  lastStyleKey = ""
+              }
+
+              private fun hideBubble() {
+                  val b = bubble ?: return
+                  try {
+                      wm.removeView(b)
+                  } catch (e: Exception) {
+                  }
+                  bubble = null
+                  bubbleKey = ""
+              }
+
+              private fun removeAll() {
+                  hideBubble()
+                  hideVeil()
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/VeilTile.kt <<'EOF'
+          package com.hussein.veil
+
+          import android.graphics.drawable.Icon
+          import android.service.quicksettings.Tile
+          import android.service.quicksettings.TileService
+
+          class VeilTile : TileService() {
+
+              override fun onStartListening() {
+                  update()
+              }
+
+              override fun onClick() {
+                  val p = getSharedPreferences(Cfg.PREFS, MODE_PRIVATE)
+                  p.edit().putBoolean("full", !p.getBoolean("full", false)).apply()
+                  update()
+              }
+
+              private fun update() {
+                  val t = qsTile ?: return
+                  val on = getSharedPreferences(Cfg.PREFS, MODE_PRIVATE).getBoolean("full", false)
+                  t.state = if (on) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+                  t.label = getString(R.string.tile_label)
+                  t.icon = Icon.createWithResource(this, android.R.drawable.ic_menu_view)
+                  t.updateTile()
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/AppsActivity.kt <<'EOF'
+          package com.hussein.veil
+
+          import android.app.Activity
+          import android.content.Intent
+          import android.os.Bundle
+          import android.widget.ArrayAdapter
+          import android.widget.ListView
+
+          class AppsActivity : Activity() {
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  title = "ستارة تلقائية لتطبيقات معينة"
+                  val p = getSharedPreferences(Cfg.PREFS, MODE_PRIVATE)
+                  val pm = packageManager
+
+                  val launcher = Intent(Intent.ACTION_MAIN)
+                  launcher.addCategory(Intent.CATEGORY_LAUNCHER)
+                  val apps = pm.queryIntentActivities(launcher, 0)
+                      .map { Pair(it.loadLabel(pm).toString(), it.activityInfo.packageName) }
+                      .filter { it.second != packageName }
+                      .distinctBy { it.second }
+                      .sortedBy { it.first.lowercase() }
+
+                  val selected = HashSet<String>(p.getStringSet("apps", null) ?: emptySet<String>())
+
+                  val list = ListView(this)
+                  list.choiceMode = ListView.CHOICE_MODE_MULTIPLE
+                  list.adapter = ArrayAdapter(
+                      this,
+                      android.R.layout.simple_list_item_multiple_choice,
+                      apps.map { it.first }
+                  )
+                  for (i in apps.indices) {
+                      list.setItemChecked(i, selected.contains(apps[i].second))
+                  }
+                  list.setOnItemClickListener { _, _, pos, _ ->
+                      val pkg = apps[pos].second
+                      if (list.isItemChecked(pos)) selected.add(pkg) else selected.remove(pkg)
+                      p.edit().putStringSet("apps", HashSet<String>(selected)).apply()
+                  }
+                  setContentView(list)
+              }
+          }
+          EOF
+
+          cat > app/src/main/java/com/hussein/veil/MainActivity.kt <<'EOF'
+          package com.hussein.veil
+
+          import android.app.Activity
+          import android.content.Intent
+          import android.content.SharedPreferences
+          import android.graphics.Bitmap
+          import android.graphics.BitmapFactory
+          import android.os.Bundle
+          import android.provider.Settings
+          import android.view.View
+          import android.widget.AdapterView
+          import android.widget.ArrayAdapter
+          import android.widget.Button
+          import android.widget.LinearLayout
+          import android.widget.ScrollView
+          import android.widget.SeekBar
+          import android.widget.Spinner
+          import android.widget.Switch
+          import android.widget.TextView
+          import android.widget.Toast
+          import java.io.File
+          import java.io.FileOutputStream
+
+          class MainActivity : Activity() {
+
+              private lateinit var p: SharedPreferences
+              private lateinit var status: TextView
+              private lateinit var fullSw: Switch
+              private lateinit var root: LinearLayout
+              private var pad = 0
+              private val pickCode = 7
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  p = getSharedPreferences(Cfg.PREFS, MODE_PRIVATE)
+                  pad = (16 * resources.displayMetrics.density).toInt()
+
+                  root = LinearLayout(this)
+                  root.orientation = LinearLayout.VERTICAL
+                  root.setPadding(pad, pad, pad, pad)
+
+                  addText(getString(R.string.app_name), 26f, 0)
+                  status = addText("", 16f, pad / 2)
+                  addButton("فتح إعدادات سهولة الاستخدام لتفعيل الخدمة") {
+                      startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                  }
+
+                  addSwitch("تفعيل Veil (المفتاح الرئيسي)", "on", true)
+                  fullSw = addSwitch("ستارة على الشاشة كاملة الآن (بدون كيبورد)", "full", false)
+                  addSwitch("تعتيم تلقائي لما الكيبورد يظهر (الزر الصغير يرفع الستارة أو يرجّعها)", "kbauto", true)
+                  addSwitch("اللمس يمر من خلال الستارة (لو أوقفته: اضغط مطولًا على الستارة لتشوف تحتها)", "through", true)
+
+                  addSeek("درجة التعتيم", "opacity", 85, 10, 95)
+                  addSpinner("لون الستارة", Cfg.colorNames, "color", 0)
+
+                  addButton("اختيار صورة كستارة") {
+                      val i = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                      i.addCategory(Intent.CATEGORY_OPENABLE)
+                      i.type = "image/*"
+                      startActivityForResult(i, pickCode)
+                  }
+                  addButton("إزالة الصورة والرجوع للون") {
+                      p.edit().putBoolean("photo", false).apply()
+                      Toast.makeText(this, "تم", Toast.LENGTH_SHORT).show()
+                  }
+
+                  addSeek("إزاحة الستارة لأسفل لتغطية شريط اقتراحات الكيبورد", "offset", 0, 0, 150)
+                  addSpinner("مكان الزر الصغير", Cfg.ctlNames, "ctl", 2)
+
+                  addButton("ستارة تلقائية لتطبيقات معينة") {
+                      startActivity(Intent(this, AppsActivity::class.java))
+                  }
+
+                  addText(getString(R.string.note), 14f, pad)
+
+                  val scroll = ScrollView(this)
+                  scroll.addView(root)
+                  setContentView(scroll)
+              }
+
+              override fun onResume() {
+                  super.onResume()
+                  status.text = if (isServiceEnabled()) {
+                      "✅ الخدمة مفعّلة"
+                  } else {
+                      "⚠️ الخدمة غير مفعّلة. اضغط الزر بالأسفل، ثم التطبيقات المثبتة، ثم Veil، ثم فعّلها."
+                  }
+                  fullSw.isChecked = p.getBoolean("full", false)
+              }
+
+              override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+                  super.onActivityResult(requestCode, resultCode, data)
+                  if (requestCode != pickCode || resultCode != RESULT_OK) return
+                  val uri = data?.data ?: return
+                  try {
+                      val o = BitmapFactory.Options()
+                      o.inJustDecodeBounds = true
+                      contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, o) }
+                      var s = 1
+                      while (o.outWidth / s > 1600 || o.outHeight / s > 1600) s *= 2
+                      val o2 = BitmapFactory.Options()
+                      o2.inSampleSize = s
+                      val bmp = contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, o2) }
+                      if (bmp == null) {
+                          Toast.makeText(this, "تعذّر فتح الصورة", Toast.LENGTH_SHORT).show()
+                          return
+                      }
+                      FileOutputStream(File(filesDir, "veil.jpg")).use {
+                          bmp.compress(Bitmap.CompressFormat.JPEG, 90, it)
+                      }
+                      p.edit().putBoolean("photo", true).putInt("photoVer", p.getInt("photoVer", 0) + 1).apply()
+                      Toast.makeText(this, "تم تعيين الصورة كستارة", Toast.LENGTH_SHORT).show()
+                  } catch (e: Exception) {
+                      Toast.makeText(this, "تعذّر فتح الصورة", Toast.LENGTH_SHORT).show()
+                  }
+              }
+
+              private fun isServiceEnabled(): Boolean {
+                  val s = Settings.Secure.getString(
+                      contentResolver,
+                      Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                  ) ?: return false
+                  return s.contains("$packageName/")
+              }
+
+              private fun addText(text: String, size: Float, top: Int): TextView {
+                  val t = TextView(this)
+                  t.text = text
+                  t.textSize = size
+                  t.setPadding(0, top, 0, 0)
+                  root.addView(t)
+                  return t
+              }
+
+              private fun addButton(label: String, onClick: () -> Unit): Button {
+                  val b = Button(this)
+                  b.text = label
+                  b.setOnClickListener { onClick() }
+                  root.addView(b)
+                  return b
+              }
+
+              private fun addSwitch(label: String, key: String, def: Boolean): Switch {
+                  val s = Switch(this)
+                  s.text = label
+                  s.isChecked = p.getBoolean(key, def)
+                  s.setPadding(0, pad, 0, 0)
+                  s.setOnCheckedChangeListener { _, checked ->
+                      p.edit().putBoolean(key, checked).apply()
+                  }
+                  root.addView(s)
+                  return s
+              }
+
+              private fun addSeek(label: String, key: String, def: Int, min: Int, max: Int) {
+                  addText(label, 14f, pad)
+                  val bar = SeekBar(this)
+                  bar.max = max
+                  bar.progress = p.getInt(key, def)
+                  bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                      override fun onProgressChanged(sb: SeekBar?, v: Int, fromUser: Boolean) {
+                          p.edit().putInt(key, maxOf(min, v)).apply()
+                      }
+
+                      override fun onStartTrackingTouch(sb: SeekBar?) {}
+
+                      override fun onStopTrackingTouch(sb: SeekBar?) {}
+                  })
+                  root.addView(bar)
+              }
+
+              private fun addSpinner(label: String, names: Array<String>, key: String, def: Int) {
+                  addText(label, 14f, pad)
+                  val sp = Spinner(this)
+                  sp.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, names)
+                  sp.setSelection(p.getInt(key, def))
+                  sp.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                      override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                          p.edit().putInt(key, pos).apply()
+                      }
+
+                      override fun onNothingSelected(parent: AdapterView<*>?) {}
+                  }
+                  root.addView(sp)
+              }
+          }
+          EOF
+
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Publish APK as a release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Veil v${{ github.run_number }}
+          files: app/build/outputs/apk/debug/app-debug.apk
